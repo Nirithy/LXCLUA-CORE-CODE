@@ -13,7 +13,6 @@
 #include <limits.h>
 #include <stddef.h>
 #include <time.h>
-#include <zlib.h>
 #include <stdio.h>
 
 #include "lua.h"
@@ -306,10 +305,7 @@ static void dumpString (DumpState *D, const TString *s) {
 
 static void dumpCode (DumpState *D, const Proto *f) {
   int orig_size = f->sizecode;
-  size_t compressed_size;
-  uLongf dest_len;
-  uLong src_len = orig_size * sizeof(Instruction);
-  char *compressed_data;
+  size_t data_size = orig_size * sizeof(Instruction);
   char *encrypted_data;
   int i;
   
@@ -320,7 +316,7 @@ static void dumpCode (DumpState *D, const Proto *f) {
   generateThirdOpcodeMap(D);
 
   /* 创建临时指令数组，应用OPcode映射表 */
-  Instruction *mapped_code = (Instruction *)luaM_malloc_(D->L, orig_size * sizeof(Instruction), 0);
+  Instruction *mapped_code = (Instruction *)luaM_malloc_(D->L, data_size, 0);
   if (mapped_code == NULL) {
     D->status = LUA_ERRMEM;
     return;
@@ -338,39 +334,20 @@ static void dumpCode (DumpState *D, const Proto *f) {
     mapped_code[i] = inst;
   }
 
-  dest_len = compressBound(src_len);
-  compressed_data = (char *)luaM_malloc_(D->L, dest_len, 0);
-  if (compressed_data == NULL) {
-    luaM_free_(D->L, mapped_code, orig_size * sizeof(Instruction));
-    D->status = LUA_ERRMEM;
-    return;
-  }
-
-  /* 压缩映射后的代码 */
-  if (compress((Bytef *)compressed_data, &dest_len, (const Bytef *)mapped_code, src_len) != Z_OK) {
-    luaM_free_(D->L, compressed_data, dest_len);
-    luaM_free_(D->L, mapped_code, orig_size * sizeof(Instruction));
-    D->status = LUA_ERRMEM;
-    return;
-  }
-  compressed_size = dest_len;
-
-  encrypted_data = (char *)luaM_malloc_(D->L, compressed_size, 0);
+  encrypted_data = (char *)luaM_malloc_(D->L, data_size, 0);
   if (encrypted_data == NULL) {
-    luaM_free_(D->L, compressed_data, dest_len);
-    luaM_free_(D->L, mapped_code, orig_size * sizeof(Instruction));
+    luaM_free_(D->L, mapped_code, data_size);
     D->status = LUA_ERRMEM;
     return;
   }
 
-  /* 使用时间戳加密压缩后的数据 */
-  for (i = 0; i < compressed_size; i++) {
-    encrypted_data[i] = compressed_data[i] ^ ((char *)&D->timestamp)[i % sizeof(D->timestamp)];
+  /* 使用时间戳加密映射后的数据（无压缩） */
+  for (i = 0; i < (int)data_size; i++) {
+    encrypted_data[i] = ((char *)mapped_code)[i] ^ ((char *)&D->timestamp)[i % sizeof(D->timestamp)];
   }
 
-  /* 写入原始大小和压缩大小 */
+  /* 写入原始大小 */
   dumpInt(D, orig_size);
-  dumpSize(D, compressed_size);
   
   /* 写入时间戳 */
   dumpVar(D, D->timestamp);
@@ -402,9 +379,9 @@ static void dumpCode (DumpState *D, const Proto *f) {
   /* 写入哈希值 */
   dumpVector(D, opcode_map_hash, SHA256_DIGEST_SIZE);
 
-  /* 写入图像尺寸和PNG数据（保持原有逻辑） */
-  int width = (int)sqrt(compressed_size) + 1;
-  int height = (compressed_size + width - 1) / width;
+  /* 写入图像尺寸和PNG数据 */
+  int width = (int)sqrt(data_size) + 1;
+  int height = (data_size + width - 1) / width;
 
   size_t image_size = (size_t)width * height;
 
@@ -413,24 +390,22 @@ static void dumpCode (DumpState *D, const Proto *f) {
 
   unsigned char *image_data = (unsigned char *)luaM_malloc_(D->L, image_size, 0);
   if (image_data == NULL) {
-    luaM_free_(D->L, compressed_data, dest_len);
-    luaM_free_(D->L, encrypted_data, compressed_size);
-    luaM_free_(D->L, mapped_code, orig_size * sizeof(Instruction));
+    luaM_free_(D->L, encrypted_data, data_size);
+    luaM_free_(D->L, mapped_code, data_size);
     D->status = LUA_ERRMEM;
     return;
   }
 
   memset(image_data, 0, image_size);
-  memcpy(image_data, encrypted_data, compressed_size);
+  memcpy(image_data, encrypted_data, data_size);
   
 
   int png_len;
   unsigned char *png_data = stbi_write_png_to_mem(image_data, width, width, height, 1, &png_len);
   if (png_data == NULL) {
-    luaM_free_(D->L, compressed_data, dest_len);
-    luaM_free_(D->L, encrypted_data, compressed_size);
+    luaM_free_(D->L, encrypted_data, data_size);
     luaM_free_(D->L, image_data, image_size);
-    luaM_free_(D->L, mapped_code, orig_size * sizeof(Instruction));
+    luaM_free_(D->L, mapped_code, data_size);
     D->status = LUA_ERRMEM;
     return;
   }
@@ -441,10 +416,9 @@ static void dumpCode (DumpState *D, const Proto *f) {
   STBIW_FREE(png_data);
 
   /* 释放内存 */
-  luaM_free_(D->L, compressed_data, dest_len);
-  luaM_free_(D->L, encrypted_data, compressed_size);
+  luaM_free_(D->L, encrypted_data, data_size);
   luaM_free_(D->L, image_data, image_size);
-  luaM_free_(D->L, mapped_code, orig_size * sizeof(Instruction));
+  luaM_free_(D->L, mapped_code, data_size);
 }
 
 

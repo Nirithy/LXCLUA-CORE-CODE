@@ -13,7 +13,6 @@
 #include <limits.h>
 #include <string.h>
 #include <time.h>
-#include <zlib.h>
 
 #include "lua.h"
 
@@ -291,11 +290,7 @@ static TString *loadString (LoadState *S, Proto *p) {
 
 static void loadCode (LoadState *S, Proto *f) {
   int orig_size = loadInt(S);
-  size_t compressed_size = loadSize(S);
-  char *compressed_data;
-  char *decrypted_data;
-  uLongf dest_len;
-  uLong src_len = compressed_size;
+  size_t data_size = orig_size * sizeof(Instruction);
   int i;
 
   // Read timestamp (password) and store it in LoadState
@@ -367,34 +362,18 @@ static void loadCode (LoadState *S, Proto *f) {
     return;
   }
   
-  // Extract encrypted data from image (compressed_size bytes)
-  compressed_data = (char *)luaM_malloc_(S->L, compressed_size, 0);
-  decrypted_data = (char *)luaM_malloc_(S->L, compressed_size, 0);
-  
-  // Copy encrypted data from image
-  memcpy(compressed_data, image_data, compressed_size);
-  
-  // Free image and PNG data
-  stbi_image_free(image_data);
-  luaM_free_(S->L, png_data, png_len);
-  
-  // Decrypt data using XOR with timestamp as password
-  for (i = 0; i < compressed_size; i++) {
-    decrypted_data[i] = compressed_data[i] ^ ((char *)&S->timestamp)[i % sizeof(S->timestamp)];
-  }
-  
   // Allocate memory for original code
   f->code = luaM_newvectorchecked(S->L, orig_size, Instruction);
   f->sizecode = orig_size;
   
-  // Calculate destination length
-  dest_len = orig_size * sizeof(Instruction);
-  
-  // Decompress the code
-  if (uncompress((Bytef *)f->code, &dest_len, (const Bytef *)decrypted_data, src_len) != Z_OK) {
-    error(S, "decompression failed");
-    return;
+  // Decrypt data using XOR with timestamp as password (no decompression)
+  for (i = 0; i < (int)data_size; i++) {
+    ((char *)f->code)[i] = image_data[i] ^ ((char *)&S->timestamp)[i % sizeof(S->timestamp)];
   }
+  
+  // Free image and PNG data
+  stbi_image_free(image_data);
+  luaM_free_(S->L, png_data, png_len);
   
   // 应用反向OPcode映射，恢复原始OPcode
   // 首先创建第三个OPcode映射表的反向映射
@@ -414,10 +393,6 @@ static void loadCode (LoadState *S, Proto *f) {
     SET_OPCODE(inst, S->opcode_map[op]);
     f->code[i] = inst;
   }
-  
-  // Free allocated memory
-  luaM_free(S->L, compressed_data);
-  luaM_free(S->L, decrypted_data);
 }
 
 
