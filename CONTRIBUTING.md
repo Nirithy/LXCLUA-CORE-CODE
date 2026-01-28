@@ -55,11 +55,11 @@ We greatly welcome community members to contribute to the LXCLUA project! Whethe
 ```bash
 # 克隆仓库
 # Clone the repository
-git clone https://github.com/yourusername/LXCLUA.git
+git clone https://github.com/OxenFxc/LXCLUA-CORE-CODE.git
 
 # 进入仓库目录
 # Enter the repository directory
-cd LXCLUA
+cd LXCLUA-CORE-CODE
 
 # 创建并切换到新分支
 # Create and switch to a new branch
@@ -172,11 +172,11 @@ All contributors participating in the LXCLUA project should adhere to our code o
 ### 1. 如何获取帮助？ / How to Get Help?
 
 - **GitHub Issues**：在GitHub上提交issue
-- **邮件**：发送邮件到contact@difierline.com
+- **邮件**：发送邮件到difierline@yeah.net
 - **社区**：参与项目的社区讨论
 
 - **GitHub Issues**: Submit an issue on GitHub
-- **Email**: Send an email to contact@difierline.com
+- **Email**: Send an email to difierline@yeah.net
 - **Community**: Participate in the project's community discussions
 
 ### 2. 如何报告安全问题？ / How to Report Security Issues?

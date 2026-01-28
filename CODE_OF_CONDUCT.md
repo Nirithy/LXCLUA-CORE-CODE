@@ -48,7 +48,7 @@ Project maintainers are responsible for clarifying and enforcing our behavior st
 
 ### 执行流程 / Enforcement Process
 
-1. **报告问题**：如果您遇到或目睹了违反行为准则的行为，请通过邮件联系项目维护者：contact@difierline.com
+1. **报告问题**：如果您遇到或目睹了违反行为准则的行为，请通过邮件联系项目维护者：difierline@yeah.net
 2. **调查**：项目维护者将对报告的问题进行调查，确保公平和客观
 3. **采取行动**：根据调查结果，项目维护者可能会采取以下行动：
    - 私下警告违规者
@@ -58,7 +58,7 @@ Project maintainers are responsible for clarifying and enforcing our behavior st
    - 其他适当的措施
 4. **通知结果**：项目维护者将向报告者和违规者通知处理结果
 
-1. **Report the issue**: If you encounter or witness behavior that violates the code of conduct, please contact the project maintainers via email: contact@difierline.com
+1. **Report the issue**: If you encounter or witness behavior that violates the code of conduct, please contact the project maintainers via email: difierline@yeah.net
 2. **Investigation**: Project maintainers will investigate the reported issue, ensuring fairness and objectivity
 3. **Take action**: Based on the investigation results, project maintainers may take the following actions:
    - Privately warn the violator
@@ -114,9 +114,9 @@ If you see someone violating the code of conduct:
 
 ### 如何寻求支持 / How to Seek Support
 
-如果您因为他人的不当行为而感到不适，或需要支持，请联系项目维护者：contact@difierline.com
+如果您因为他人的不当行为而感到不适，或需要支持，请联系项目维护者：difierline@yeah.net
 
-If you feel uncomfortable due to others' inappropriate behavior or need support, please contact the project maintainers: contact@difierline.com
+If you feel uncomfortable due to others' inappropriate behavior or need support, please contact the project maintainers: difierline@yeah.net
 
 ### 修订和更新 / Revision and Update
 
