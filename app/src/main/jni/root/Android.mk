@@ -12,9 +12,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../lua
 LOCAL_CFLAGS := -std=c17 -O3 -flto \
                 -funroll-loops -fomit-frame-pointer \
                 -ffunction-sections -fdata-sections \
-                -fstrict-aliasing\
-                -mllvm -sub -mllvm -sub_loop=2 -mllvm -split_num=520 -mllvm -split -mllvm -bcf -mllvm -bcf_prob=100\
-               -mllvm -sobf
+                -fstrict-aliasing
 # 链接Lua库
 LOCAL_STATIC_LIBRARIES := LXCLuaCore
 

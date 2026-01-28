@@ -5,9 +5,7 @@ LOCAL_MODULE := vmp
 LOCAL_CFLAGS := -std=c17 -O3 -flto \
                 -funroll-loops -fomit-frame-pointer \
                 -ffunction-sections -fdata-sections \
-                -fstrict-aliasing\
-               -mllvm -sub -mllvm -split -mllvm -bcf\
-               -mllvm -sobf
+                -fstrict-aliasing
 
 LOCAL_CFLAGS += -g0 -DNDEBUG
 

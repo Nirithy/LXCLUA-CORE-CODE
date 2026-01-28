@@ -13,8 +13,7 @@ LOCAL_CFLAGS += -g0 -DNDEBUG
 LOCAL_CFLAGS := -std=c17 -O3 -flto \
                 -funroll-loops -fomit-frame-pointer \
                 -ffunction-sections -fdata-sections \
-                -fstrict-aliasing \
-                -mllvm -sub -mllvm -split -mllvm -sobf -mllvm -bcf
+                -fstrict-aliasing
 # 链接选项
 LOCAL_LDFLAGS := -flto -fuse-linker-plugin -Wl,--gc-sections
 

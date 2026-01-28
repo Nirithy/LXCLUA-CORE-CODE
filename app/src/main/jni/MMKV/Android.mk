@@ -11,7 +11,10 @@ LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) \
     $(LOCAL_PATH)/MMKV \
     $(LOCAL_PATH)/../lua
-LOCAL_CFLAGS :=-mllvm -sub -mllvm -sub_loop=2 -mllvm -split_num=520 -mllvm -sobf -mllvm -split -mllvm -bcf -mllvm -bcf_prob=100
+LOCAL_CPPFLAGS := -std=c++17 -O3 -flto \
+                -funroll-loops -fomit-frame-pointer \
+                -ffunction-sections -fdata-sections \
+                -fstrict-aliasing
 
 LOCAL_LDLIBS += $(LOCAL_PATH)/libs/libcore.a -lz -lc++ -llog
 

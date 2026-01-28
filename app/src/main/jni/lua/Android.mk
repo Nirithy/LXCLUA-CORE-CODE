@@ -5,8 +5,7 @@ LOCAL_MODULE := lua
 LOCAL_CFLAGS := -std=c23 -O3 -flto \
                 -funroll-loops -fomit-frame-pointer \
                 -ffunction-sections -fdata-sections \
-                -fstrict-aliasing#\
-                 -mllvm -sub -mllvm -bcf
+                -fstrict-aliasing
 LOCAL_CFLAGS += -g0 -DNDEBUG
 
 # 极致性能构建配置

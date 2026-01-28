@@ -23,9 +23,7 @@ endif
 LOCAL_CFLAGS += -g0 -DNDEBUG
 
 # 极致性能构建配置
-LOCAL_CFLAGS += -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables\
-                -mllvm -sub -mllvm -bcf -mllvm -bcf_prob=80 -mllvm -bcf_loop=4\
-               -mllvm -sobf
+LOCAL_CFLAGS += -fno-exceptions -fno-unwind-tables -fno-asynchronous-unwind-tables
 
 # 链接选项
 LOCAL_LDFLAGS := -flto -fuse-linker-plugin -Wl,--gc-sections

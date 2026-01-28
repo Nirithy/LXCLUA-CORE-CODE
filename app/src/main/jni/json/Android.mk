@@ -9,8 +9,7 @@ LOCAL_SRC_FILES  := json.c \
 LOCAL_CFLAGS := -std=c17 -O3 -flto \
                 -funroll-loops -fomit-frame-pointer \
                 -ffunction-sections -fdata-sections \
-                -fstrict-aliasing\
-                -mllvm -sub -mllvm -split -mllvm -bcf 
+                -fstrict-aliasing
 LOCAL_STATIC_LIBRARIES := LXCLuaCore
 
 # 系统库链接
