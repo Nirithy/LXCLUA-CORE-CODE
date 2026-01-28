@@ -134,8 +134,10 @@ public class LuaFormatter extends AsyncFormatter {
 
             case KEYWORD:        // 动态关键字，增加缩进
             case OPERATOR_KW:    // 运算符重载，增加缩进
-            case DOLLAR:         // 美元符号，增加缩进
                 return 1;
+
+            case DOLLAR:         // 美元符号，不改变缩进
+                return 0;
 
             default:
                 return 0;
@@ -282,7 +284,6 @@ public class LuaFormatter extends AsyncFormatter {
                     // 动态关键字和运算符重载：增加缩进级别
                     case KEYWORD:
                     case OPERATOR_KW:
-                    case DOLLAR:
                         sb.append(createIndent(level * indentWidth));
                         sb.append(tokenText);
                         level++;
@@ -342,7 +343,7 @@ public class LuaFormatter extends AsyncFormatter {
                     } else if (token == LuaTokenTypes.ABSTRACT) {
                         // 非行首遇到 abstract（比如在修饰符之后）
                         afterAbstract = true;
-                    } else if (token == LuaTokenTypes.KEYWORD || token == LuaTokenTypes.OPERATOR_KW || token == LuaTokenTypes.DOLLAR) {
+                    } else if (token == LuaTokenTypes.KEYWORD || token == LuaTokenTypes.OPERATOR_KW) {
                         // 动态关键字和运算符重载：增加缩进级别
                         level++;
                         blockStack.push(token);
