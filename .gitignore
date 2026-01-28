@@ -2,3 +2,24 @@
 /.qoder
 /.trae
 /.vscode
+/.idea
+
+# 签名文件
+difierline.jks
+*.keystore
+
+# Android 构建产物
+**/build/
+local.properties
+*.apk
+*.aab
+*.iml
+
+# NDK 编译产物
+**/obj/
+.externalNativeBuild/
+.cxx/
+
+# 其他
+*.hprof
+captures/
