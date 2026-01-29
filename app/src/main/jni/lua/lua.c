@@ -15,6 +15,10 @@
 
 #include <signal.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
 #include "lua.h"
 
 #include "lauxlib.h"
@@ -669,6 +673,9 @@ static int pmain (lua_State *L) {
 
 int main (int argc, char **argv) {
   int status, result;
+#if defined(_WIN32)
+  SetConsoleOutputCP(65001);
+#endif
   lua_State *L = luaL_newstate();  /* create state */
   if (L == NULL) {
     l_message(argv[0], "cannot create state: not enough memory");
