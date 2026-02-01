@@ -97,12 +97,12 @@ class ErrorActivity : AppCompatActivity() {
     private val SILICONFLOW_LINES = listOf(
         mapOf(
             "name" to "一号线路",
-            "API_KEY" to "sk-ddtcfjepkntvdvsdpxuzoomxmbefptatyxmaojhrwtzpnuzx",
+            "API_KEY" to "sk-jkrcsurmxiogqfdccdomecffhadukhqmtppzosikuesidbnl",
             "API_URL" to "https://api.siliconflow.cn/v1/chat/completions"
         ),
         mapOf(
             "name" to "二号线路",
-            "API_KEY" to "sk-jkrcsurmxiogqfdccdomecffhadukhqmtppzosikuesidbnl",
+            "API_KEY" to "sk-odxrokrvkdkugrmefqsqdgezhcbqawvdwzlnlgvdixihecvn",
             "API_URL" to "https://api.siliconflow.cn/v1/chat/completions"
         )
     )

@@ -66,8 +66,8 @@ import com.luajava.LuaStateFactory;
 import com.luajava.LuaString;
 
 import com.difierline.lua.util.FileUtil;
-import com.yan.luaeditor.CompletionName;
-import com.yan.luaeditor.tools.CompleteHashmapUtils;
+import com.nirithy.luaeditor.CompletionName;
+import com.nirithy.luaeditor.tools.CompleteHashmapUtils;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -100,8 +100,8 @@ import dalvik.system.DexFile;
 import com.difierline.lua.lxclua.R;
 import com.difierline.lua.lxclua.utils.JsonUtil;
 
-import com.yan.luaeditor.tools.ClassMethodScanner;
-import com.yan.luaeditor.tools.CompleteHashmapUtils;
+import com.nirithy.luaeditor.tools.ClassMethodScanner;
+import com.nirithy.luaeditor.tools.CompleteHashmapUtils;
 
 import com.google.android.material.snackbar.Snackbar;
 import android.content.ClipData;

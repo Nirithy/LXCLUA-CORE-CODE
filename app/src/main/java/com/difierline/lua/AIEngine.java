@@ -221,7 +221,7 @@ public class AIEngine {
     private static final List<Map<String, String>> AI_MODELS = new ArrayList<>();
     
     // 默认的 SiliconFlow API Keys
-    private static final String DEFAULT_SILICONFLOW_KEYS = "sk-ddtcfjepkntvdvsdpxuzoomxmbefptatyxmaojhrwtzpnuzx,sk-jkrcsurmxiogqfdccdomecffhadukhqmtppzosikuesidbnl";
+    private static final String DEFAULT_SILICONFLOW_KEYS = "sk-odxrokrvkdkugrmefqsqdgezhcbqawvdwzlnlgvdixihecvn,sk-jkrcsurmxiogqfdccdomecffhadukhqmtppzosikuesidbnl";
     
     // KeyRoulette 接口，用于管理多个 API 密钥
     private interface KeyRoulette {
@@ -633,8 +633,8 @@ public class AIEngine {
         }});
         
         AI_MODELS.add(new HashMap<String, String>() {{ 
-            put("id", "Qwen/Qwen2.5-Coder-7B-Instruct");
-            put("name", "通义千问2.5-Coder-7B");
+            put("id", "Qwen/Qwen3-8B");
+            put("name", "通义千问Qwen/Qwen3-8B");
             put("provider", "siliconflow");
         }});
         
@@ -665,7 +665,7 @@ public class AIEngine {
         this.luaContext = luaContext;
         this.sandboxMode = false;
         this.allowedProviders = new HashSet<>();
-        this.currentModelId = "Qwen/Qwen2.5-7B-Instruct"; // 默认模型
+        this.currentModelId = "Qwen/Qwen3-8B"; // 默认模型
         this.currentProvider = "siliconflow"; // 默认提供商
         init();
     }
@@ -679,7 +679,7 @@ public class AIEngine {
         this.luaContext = luaContext;
         this.sandboxMode = sandboxMode;
         this.allowedProviders = new HashSet<>();
-        this.currentModelId = "Qwen/Qwen2.5-7B-Instruct"; // 默认模型
+        this.currentModelId = "Qwen/Qwen3-8B"; // 默认模型
         this.currentProvider = "siliconflow"; // 默认提供商
         init();
     }

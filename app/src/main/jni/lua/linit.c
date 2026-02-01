@@ -68,6 +68,7 @@ static const luaL_Reg stdlibs[] = {
   {LUA_VMLIBNAME, luaopen_vm},
   {LUA_BITLIBNAME, luaopen_bit},
   {LUA_PTRLIBNAME, luaopen_ptr},
+  {"bit32", luaopen_bit},
 
   {LUA_SMGRNAME, luaopen_smgr},
   {"translator", luaopen_translator},
@@ -118,6 +119,7 @@ static const luaL_Reg loadedlibs[] = {
   {LUA_DBLIBNAME, luaopen_debug},
   {LUA_BITLIBNAME, luaopen_bit},
   {LUA_PTRLIBNAME, luaopen_ptr},
+  {"bit32", luaopen_bit},
 #ifndef _WIN32
   {LUA_SMGRNAME, luaopen_smgr},
   {"translator", luaopen_translator},

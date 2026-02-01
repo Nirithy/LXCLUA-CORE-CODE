@@ -1,7 +1,7 @@
 package com.difierline.lua;
 
 import com.luajava.*;
-import com.yan.luaeditor.config.AutoCompletePackages;
+import com.nirithy.luaeditor.config.AutoCompletePackages;
 
 import java.util.ArrayList;
 import java.util.List;
