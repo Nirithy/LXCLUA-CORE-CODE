@@ -873,7 +873,7 @@ public class LuaState {
     public String analyzeCode(String code) {
         return _analyzeCode(luaState, code);
     }
-
+    
     //IMPLEMENTED C MACROS
 
     public void pop(int n) {

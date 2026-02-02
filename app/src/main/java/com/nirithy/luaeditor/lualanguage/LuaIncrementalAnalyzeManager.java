@@ -34,12 +34,13 @@ import java.util.regex.Pattern;
 import com.luajava.LuaState;
 import com.luajava.LuaStateFactory;
 
+
 public class LuaIncrementalAnalyzeManager
         extends AsyncIncrementalAnalyzeManager<State, HighlightToken> {
     public DiagnosticsContainer diagnosticsContainer;
     private static final int STATE_INCOMPLETE_COMMENT = 1;
     private static final int STATE_INCOMPLETE_LONG_STRING = 2;
-
+    
     private static final Pattern URL_PATTERN =
             Pattern.compile(
                     "https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)");
