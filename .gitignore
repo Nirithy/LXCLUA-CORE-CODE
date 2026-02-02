@@ -22,7 +22,8 @@ local.properties
 
 # LIEF预编译库
 **/jni/lief/LIEF-*/
-
+app/src/main/jni/luajitjava/obj/local/
+app/src/main/jni/obj/local/
 # 其他
 *.hprof
 captures/
