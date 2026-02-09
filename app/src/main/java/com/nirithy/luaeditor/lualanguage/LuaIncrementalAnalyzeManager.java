@@ -226,7 +226,7 @@ public class LuaIncrementalAnalyzeManager
         Set<String> keywords = new HashSet<>(Arrays.asList(
             "and", "break", "do", "else", "elseif", "end", "false", "for",
             "function", "goto", "if", "in", "as", "local", "nil", "not", "or",
-            "repeat", "return", "then", "true", "until", "while", "export"
+            "repeat", "return", "then", "true", "until", "while", "async", "await", "export"
         ));
         return keywords.contains(word);
     }

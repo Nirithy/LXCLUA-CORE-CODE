@@ -167,6 +167,10 @@ public enum LuaTokenTypes {
     // 保留 (兼容旧代码)
     DEFER,          // defer (延迟执行)
 
+    // 异步关键字
+    ASYNC,          // async (异步函数声明)
+    AWAIT,          // await (等待异步结果)
+
     // 颜色高亮 (兼容旧代码)
     HEX_COLOR,
     HEX_COLOR_HIGH_CONTRAST

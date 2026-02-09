@@ -28,6 +28,9 @@ public class llex {
             TK_CONCAT = 284, TK_DOTS = 285, TK_EQ = 286, TK_GE = 287, TK_LE = 288, TK_NE = 289,
             TK_IDIV = 290, TK_SHL = 291, TK_SHR = 292,
             TK_DBCOLON = 293, TK_EOS = 294, TK_NUMBER = 295, TK_NAME = 296, TK_STRING = 297, TK_COMMENT = 298, TK_IS = 299;
+    /* Lua扩展关键字 */
+    final static int TK_ASYNC = 300;
+    final static int TK_AWAIT = 301;
     final static int FIRST_RESERVED = TK_AND;
     final static int NUM_RESERVED = TK_WHILE + 1 - FIRST_RESERVED;
 

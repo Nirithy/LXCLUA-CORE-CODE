@@ -252,6 +252,8 @@ Number = {DecNumber} | {HexNumber} | {BinNumber}
   "protected"               { return PROTECTED; }
   "public"                  { return PUBLIC; }
   "static"                  { return STATIC; }
+  "async"                   { return ASYNC; }
+  "await"                   { return AWAIT; }
 
   /* region/endregion 注释 */
   "--region"[^\r\n]*        { return REGION; }

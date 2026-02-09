@@ -664,7 +664,7 @@ class MyIdentifierAutoComplete {
             "and", "break", "case", "continue", "default", "do", "else", "elseif",
             "end", "false", "for", "function", "goto", "if", "in", "local",
             "nil", "not", "or", "repeat", "return", "switch", "then", "true",
-            "until", "while","when", "print",
+            "until", "while","when", "print", "async", "await",
             // OOP 面向对象关键字
             "class", "extends", "implements", "interface", "new",
             "private", "protected", "public", "static", "super"

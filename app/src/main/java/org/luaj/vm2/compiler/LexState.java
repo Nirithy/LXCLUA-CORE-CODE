@@ -199,7 +199,7 @@ public class LexState extends Constants {
             "加等于", "减等于", "乘等于", "除等于", "整除等于", "取模等于", "按位与等于", "按位或等于", "按位异或等于", "右移等于", "左移等于", "连接等于", "自增",
             "可选链", "空值合并",
             "数字", "名称", "字符串", "文件结束",
-            "延时", "导入", "模块",
+            "延时", "导入", "模块", "异步", "等待",
     };
 
     /* terminal symbols denoted by reserved words */
@@ -282,6 +282,8 @@ public class LexState extends Constants {
     final static int TK_DEFER = TK_STRING + 1;
     final static int TK_IMPORT = TK_DEFER + 1;
     final static int TK_MODULE = TK_IMPORT + 1;
+    final static int TK_ASYNC = TK_MODULE + 1;
+    final static int TK_AWAIT = TK_ASYNC + 1;
 
     final static int FIRST_RESERVED = TK_AND;
     final static int NUM_RESERVED = TK_WHILE + 1 - FIRST_RESERVED;

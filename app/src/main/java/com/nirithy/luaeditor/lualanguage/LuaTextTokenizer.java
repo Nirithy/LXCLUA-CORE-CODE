@@ -1211,6 +1211,8 @@ public class LuaTextTokenizer {
     protected static void doStaticInit() {
         sKeywords =
                 new String[] {
+                    "async",
+                    "await",
                     "and",
                     "break",
                     "const",

@@ -28,7 +28,7 @@ public final class AutoCompletePackages {
             "tointeger", "tonumber", "tostring","toasc2i", "type", "unpack","wymd5", "xpcall", "activity", "call",
              "dump","grand", "each", "fsleep", "fwake", "import", "loadbitmap", "loadlayout", "loadmenu","match", "onDestroy", "onActivityResult", "onResult",
             "onCreateOptionsMenu", "onOptionsItemSelected", "onClick", "onTouch", "onLongClick",
-            "onItemClick", "onItemLongClick", "java",
+            "onItemClick", "onItemLongClick", "java", "async", "await",
             // OOP 面向对象关键字
             "abstract", "class", "extends", "final", "implements", "interface", "new",
             "super", "private", "protected", "public", "static");
