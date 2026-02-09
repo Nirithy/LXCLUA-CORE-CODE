@@ -41,6 +41,7 @@ public enum LuaTokenTypes {
     GOTO,           // goto
     IF,             // if
     IN,             // in
+    AS,             // as (类型转换)
     IS,             // is (类型检查)
     LAMBDA,         // lambda
     LOCAL,          // local

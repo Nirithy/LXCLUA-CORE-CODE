@@ -76,6 +76,10 @@ typedef struct BlockCnt {
 static void statement (LexState *ls);
 static void expr (LexState *ls, expdesc *v);
 static void retstat (LexState *ls);
+static TypeHint *gettypehint (LexState *ls);
+static void check_type_compatibility(LexState *ls, TypeHint *target, expdesc *e);
+static TypeHint *typehint_new(LexState *ls);
+static void checktypehint (LexState *ls, TypeHint *th);
 static void breakstat (LexState *ls);
 static void buildglobal (LexState *ls, TString *varname, expdesc *var);
 static int new_varkind (LexState *ls, TString *name, lu_byte kind);
@@ -89,6 +93,9 @@ static void newexpr (LexState *ls, expdesc *v);   /* onew表达式的前向声�
 static void superexpr (LexState *ls, expdesc *v); /* osuper表达式的前向声明 */
 static void cond_expr (LexState *ls, expdesc *v); /* 条件表达式的前向声明（不将{作为函数调用） */
 static void constexprstat (LexState *ls);         /* 预处理语句 */
+static void ifexpr (LexState *ls, expdesc *v);    /* if表达式前向声明 */
+static int cond (LexState *ls);                   /* cond前向声明 */
+static Vardesc *getlocalvardesc (FuncState *fs, int vidx); /* getlocalvardesc前向声明 */
 
 static l_noret error_expected (LexState *ls, int token) {
   luaX_syntaxerror(ls,
@@ -216,12 +223,12 @@ static SoftKWDef soft_keywords[] = {
   {"get",        SKW_GET,        SOFTKW_CTX_CLASS_BODY,    {TK_NAME, 0}, {'=', 0}, 0},
   /* implements - 类继承上下文，后面必须跟接口名 */
   {"implements", SKW_IMPLEMENTS, SOFTKW_CTX_CLASS_INHERIT, {TK_NAME, 0}, {'=', 0}, 0},
-  /* ointerface - 语句开头，后面必须跟接口名 */
-  {"ointerface", SKW_INTERFACE,  SOFTKW_CTX_STMT_BEGIN,    {TK_NAME, 0}, {'=', 0}, 0},
-  /* onew - 表达式中，后面必须跟类名 */
-  {"onew",       SKW_NEW,        SOFTKW_CTX_EXPR,          {TK_NAME, 0}, {'=', 0}, 0},
-  /* osuper - 表达式中，后面必须跟.或: */
-  {"osuper",     SKW_SUPER,      SOFTKW_CTX_EXPR,          {'.', ':', 0}, {'=', 0}, 0},
+  /* interface - 语句开头，后面必须跟接口名 */
+  {"interface",  SKW_INTERFACE,  SOFTKW_CTX_STMT_BEGIN,    {TK_NAME, 0}, {'=', 0}, 0},
+  /* new - 表达式中，后面必须跟类名 */
+  {"new",        SKW_NEW,        SOFTKW_CTX_EXPR,          {TK_NAME, 0}, {'=', 0}, 0},
+  /* super - 表达式中，后面必须跟.或: */
+  {"super",      SKW_SUPER,      SOFTKW_CTX_EXPR,          {'.', ':', 0}, {'=', 0}, 0},
   /* private - 类体内，后面跟function或标识符名 */
   {"private",    SKW_PRIVATE,    SOFTKW_CTX_CLASS_BODY,    {TK_FUNCTION, TK_NAME, 0}, {'=', 0}, 0},
   /* protected - 类体内，后面跟function或标识符名 */
@@ -566,6 +573,7 @@ static void init_exp (expdesc *e, expkind k, int i) {
   e->f = e->t = NO_JUMP;
   e->k = k;
   e->u.info = i;
+  e->nodiscard = 0;
 }
 
 
@@ -580,6 +588,34 @@ static void codename (LexState *ls, expdesc *e) {
   codestring(e, str_checkname(ls));
 }
 
+
+static void checkforshadowing (LexState *ls, FuncState *fs, TString *name) {
+  /*
+  FuncState *f = fs;
+  while (f) {
+    int i;
+    for (i = cast_int(f->nactvar) - 1; i >= 0; i--) {
+      Vardesc *vd = getlocalvardesc(f, i);
+      if (eqstr(name, vd->vd.name)) {
+        const char *msg = luaO_pushfstring(ls->L, "local '%s' shadows previous declaration", getstr(name));
+        luaX_warning(ls, msg, WT_VAR_SHADOW);
+        goto check_global;
+      }
+    }
+    f = f->prev;
+  }
+
+check_global:
+  {
+    const char *s = getstr(name);
+    if (strcmp(s, "table") == 0 || strcmp(s, "string") == 0 || strcmp(s, "arg") == 0 ||
+        strcmp(s, "io") == 0 || strcmp(s, "os") == 0 || strcmp(s, "math") == 0) {
+       const char *msg = luaO_pushfstring(ls->L, "local '%s' shadows global", s);
+       luaX_warning(ls, msg, WT_GLOBAL_SHADOW);
+    }
+  }
+  */
+}
 
 /*
 ** Register a new local variable in the active 'Proto' (for debug
@@ -608,6 +644,7 @@ static int new_localvar (LexState *ls, TString *name) {
   FuncState *fs = ls->fs;
   Dyndata *dyd = ls->dyd;
   Vardesc *var;
+  checkforshadowing(ls, fs, name);
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                  MAXVARS, "local variables");
   luaM_growvector(L, dyd->actvar.arr, dyd->actvar.n + 1,
@@ -615,6 +652,7 @@ static int new_localvar (LexState *ls, TString *name) {
   var = &dyd->actvar.arr[dyd->actvar.n++];
   var->vd.kind = VDKREG;  /* default */
   var->vd.name = name;
+  var->vd.used = 0;
   return dyd->actvar.n - 1 - fs->firstlocal;
 }
 
@@ -681,6 +719,7 @@ static void init_var (FuncState *fs, expdesc *e, int vidx) {
   e->k = VLOCAL;
   e->u.var.vidx = vidx;
   e->u.var.ridx = getlocalvardesc(fs, vidx)->vd.ridx;
+  e->nodiscard = getlocalvardesc(fs, vidx)->vd.nodiscard;
 }
 
 
@@ -744,6 +783,13 @@ static void removevars (FuncState *fs, int tolevel) {
     LocVar *var = localdebuginfo(fs, --fs->nactvar);
     if (var)  /* does it have debug information? */
       var->endpc = fs->pc;
+
+    Vardesc *vd = getlocalvardesc(fs, fs->nactvar);
+    if (!vd->vd.used && vd->vd.kind == VDKREG && getstr(vd->vd.name)[0] != '_') {
+       const char *msg = luaO_pushfstring(fs->ls->L, "unused local variable '%s'", getstr(vd->vd.name));
+       luaX_warning(fs->ls, msg, WT_UNUSED_VAR);
+       lua_pop(fs->ls->L, 1);
+    }
   }
 }
 
@@ -809,6 +855,7 @@ static int searchvar (FuncState *fs, TString *n, expdesc *var) {
         init_exp(var, VCONST, fs->firstlocal + i);
       else  /* real variable */
         init_var(fs, var, i);
+      vd->vd.used = 1;
       return var->k;
     }
   }
@@ -883,6 +930,19 @@ static void singlevar (LexState *ls, expdesc *var) {
     lua_assert(var->k != VVOID);  /* this one must exist */
     codestring(&key, varname);  /* key is variable name */
     luaK_indexed(fs, var, &key);  /* env[varname] */
+    if (ls->declared_globals) {
+       TValue k;
+       setsvalue(ls->L, &k, varname);
+       const TValue *decl_v = luaH_get(ls->declared_globals, &k);
+       if (!ttisnil(decl_v) && ttistable(decl_v)) {
+          Table *decl = hvalue(decl_v);
+          TValue nd_k;
+          setsvalue(ls->L, &nd_k, luaS_newliteral(ls->L, "nodiscard"));
+          if (!ttisnil(luaH_get(decl, &nd_k))) {
+             var->nodiscard = 1;
+          }
+       }
+    }
   }
 }
 
@@ -1249,6 +1309,7 @@ static int new_varkind (LexState *ls, TString *name, lu_byte kind) {
   FuncState *fs = ls->fs;
   Dyndata *dyd = ls->dyd;
   Vardesc *var;
+  checkforshadowing(ls, fs, name);
   checklimit(fs, dyd->actvar.n + 1 - fs->firstlocal,
                  MAXVARS, "local variables");
   luaM_growvector(L, dyd->actvar.arr, dyd->actvar.n + 1,
@@ -1256,6 +1317,7 @@ static int new_varkind (LexState *ls, TString *name, lu_byte kind) {
   var = &dyd->actvar.arr[dyd->actvar.n++];
   var->vd.kind = kind;
   var->vd.name = name;
+  var->vd.used = 0;
   return dyd->actvar.n - 1 - fs->firstlocal;
 }
 
@@ -1780,7 +1842,32 @@ static void setvararg (FuncState *fs, int nparams) {
 }
 
 
-static void parlist (LexState *ls) {
+static void namedvararg (LexState *ls, TString *varargname) {
+  enterlevel(ls);
+  new_localvar(ls, varargname);
+
+  FuncState *fs = ls->fs;
+  int pc = luaK_codeABC(fs, OP_NEWTABLE, fs->freereg, 0, 0);
+  ConsControl cc;
+  luaK_code(fs, 0);
+  expdesc t;
+  init_exp(&t, VNONRELOC, fs->freereg);
+  cc.na = cc.nh = cc.tostore = 0;
+  cc.t = &t;
+  luaK_reserveregs(fs, 1);
+
+  init_exp(&cc.v, VVARARG, luaK_codeABC(fs, OP_VARARG, 0, 0, 1));
+  cc.tostore++;
+  lastlistfield(fs, &cc);
+  luaK_settablesize(fs, pc, t.u.info, cc.na, cc.nh);
+
+  adjust_assign(ls, 1, 1, &t);
+  adjustlocalvars(ls, 1);
+  leavelevel(ls);
+}
+
+
+static void parlist (LexState *ls, TString **varargname) {
   /* parlist -> [ {NAME ','} (NAME | '...') ] */
   FuncState *fs = ls->fs;
   Proto *f = fs->f;
@@ -1790,13 +1877,18 @@ static void parlist (LexState *ls) {
     do {
       switch (ls->t.token) {
         case TK_NAME: {
-          new_localvar(ls, str_checkname(ls));
+          int vidx = new_localvar(ls, str_checkname(ls));
+          getlocalvardesc(fs, vidx)->vd.hint = gettypehint(ls);
           nparams++;
           break;
         }
         case TK_DOTS: {
           luaX_next(ls);
           isvararg = 1;
+          if (varargname && ls->t.token == TK_NAME) {
+             *varargname = ls->t.seminfo.ts;
+             luaX_next(ls);
+          }
           break;
         }
         default: luaX_syntaxerror(ls, "<name> or '...' expected");
@@ -1857,8 +1949,37 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
       new_localvarliteral(ls, "self");  /* 为方法创建 'self' 参数 */
       adjustlocalvars(ls, 1);
     }
-    parlist(ls);
+    TString *varargname = NULL;
+    parlist(ls, &varargname);
     checknext(ls, ')');
+    if (testnext(ls, ':')) {
+        if (testnext(ls, '(')) {
+            do {
+                TypeHint *th = typehint_new(ls);
+                checktypehint(ls, th);
+            } while (testnext(ls, ','));
+            checknext(ls, ')');
+        } else {
+            if (ls->t.token == TK_NAME && strcmp(getstr(ls->t.seminfo.ts), "void") == 0) {
+                luaX_next(ls);
+            } else {
+                TypeHint *th = typehint_new(ls);
+                checktypehint(ls, th);
+            }
+        }
+    }
+    if (ls->t.token == '<') {
+        luaX_next(ls);
+        if (ls->t.token == TK_NAME) {
+           const char *attr = getstr(ls->t.seminfo.ts);
+           if (strcmp(attr, "nodiscard") == 0) {
+              new_fs.f->nodiscard = 1;
+           }
+           luaX_next(ls);
+        }
+        checknext(ls, '>');
+    }
+    if (varargname) namedvararg(ls, varargname);
     statlist(ls);  /* 标准语法使用 statlist */
   }
   
@@ -1876,11 +1997,11 @@ static void body (LexState *ls, expdesc *e, int ismethod, int line) {
 }
 
 
-static void lambda_parlist(LexState *ls) {
+static void lambda_parlist(LexState *ls, TString **varargname) {
     /* lambda_parlist -> '(' [ param { ',' param } ] ')' */
     /* lambda_parlist -> [ param { ',' param } ] */
     if (testnext(ls, '(')) {
-        parlist(ls);
+        parlist(ls, varargname);
         checknext(ls, ')');
         return;
     }
@@ -1899,6 +2020,10 @@ static void lambda_parlist(LexState *ls) {
                 case TK_DOTS: {  /* param -> '...' */
                     luaX_next(ls);
                     f->is_vararg = 1;
+                    if (varargname && ls->t.token == TK_NAME) {
+                       *varargname = ls->t.seminfo.ts;
+                       luaX_next(ls);
+                    }
                     break;
                 }
                 default: luaX_syntaxerror(ls, "<name> or '...' expected");
@@ -1919,7 +2044,9 @@ static void lambda_body(LexState *ls, expdesc *e, int line) {
     new_fs.f = addprototype(ls);
     new_fs.f->linedefined = line;
     open_func(ls, &new_fs, &bl);
-    lambda_parlist(ls);
+    TString *varargname = NULL;
+    lambda_parlist(ls, &varargname);
+    if (varargname) namedvararg(ls, varargname);
     if (testnext(ls, TK_LET)||testnext(ls, ':')) {
         enterlevel(ls);
         retstat(ls);
@@ -1954,13 +2081,37 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
   FuncState *fs = ls->fs;
   expdesc args;
   int base, nparams;
+  int nodiscard = f->nodiscard;
+
   switch (ls->t.token) {
     case '(': {  /* funcargs -> '(' [ explist ] ')' */
       luaX_next(ls);
       if (ls->t.token == ')')  /* arg list is empty? */
         args.k = VVOID;
       else {
-        explist(ls, &args);
+        TypeHint *f_hint = NULL;
+        if (f->k == VLOCAL) {
+           f_hint = getlocalvardesc(fs, f->u.var.vidx)->vd.hint;
+        }
+        
+        int n = 0;
+        do {
+           if (n > 0) {
+              luaK_exp2nextreg(ls->fs, &args);
+           }
+           expr(ls, &args);
+           
+           if (f_hint) {
+              for (int i=0; i<MAX_TYPE_DESCS; i++) {
+                 if (f_hint->descs[i].type == VT_FUNC) {
+                    if (n < f_hint->descs[i].nparam)
+                       check_type_compatibility(ls, f_hint->descs[i].params[n], &args);
+                 }
+              }
+           }
+           n++;
+        } while (testnext(ls, ','));
+        
         if (hasmultret(args.k))
           luaK_setmultret(fs, &args);
       }
@@ -1991,6 +2142,7 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
     nparams = fs->freereg - (base+1);
   }
   init_exp(f, VCALL, luaK_codeABC(fs, OP_CALL, base, nparams+1, 2));
+  f->nodiscard = nodiscard;
   luaK_fixline(fs, line);
   fs->freereg = base+1;  /* call remove function and arguments and leaves
                             (unless changed) one result */
@@ -2005,12 +2157,15 @@ static void funcargs (LexState *ls, expdesc *f, int line) {
 ** ============================================================
 */
 
+#define E_NO_COLON 1
 
 static void primaryexp (LexState *ls, expdesc *v) {
   /* primaryexp -> NAME | '(' expr ')' | STRING | constructor | NEW | SUPER */
   switch (ls->t.token) {
     case '(': {
       int line = ls->linenumber;
+      int old_flags = ls->expr_flags;
+      ls->expr_flags = 0;
       luaX_next(ls);
       if (ls->t.token == TK_NAME) {
         if (luaX_lookahead(ls) == TK_WALRUS) {
@@ -2020,6 +2175,7 @@ static void primaryexp (LexState *ls, expdesc *v) {
           luaX_next(ls);
           expdesc e;
           expr(ls, &e);
+          ls->expr_flags = old_flags;
           check_match(ls, ')', '(', save);
           luaK_dischargevars(ls->fs, &e);
           singlevaraux(ls->fs, varname, v, 1);
@@ -2036,6 +2192,7 @@ static void primaryexp (LexState *ls, expdesc *v) {
         }
       }
       expr(ls, v);
+      ls->expr_flags = old_flags;
       check_match(ls, ')', '(', line);
       luaK_dischargevars(ls->fs, v);
       return;
@@ -2068,13 +2225,6 @@ static void primaryexp (LexState *ls, expdesc *v) {
       return;
     }
     case TK_DOLLAR: {
-      /* $func(...) compile-time call OR $macro */
-      /* For now, we assume if it's in primaryexp, it's a value. */
-      /* Pluto allows $lib.func() which evaluates to a constant. */
-      /* Check if it is a supported compile-time function */
-
-      /* If not supported, fallback to _KEYWORDS logic for compatibility */
-
       FuncState *fs = ls->fs;
       int line = ls->linenumber;
       TString *kwname;
@@ -2084,6 +2234,48 @@ static void primaryexp (LexState *ls, expdesc *v) {
       check(ls, TK_NAME);
       kwname = ls->t.seminfo.ts;
       
+      if (strcmp(getstr(kwname), "object") == 0) {
+        luaX_next(ls); /* skip 'object' */
+        checknext(ls, '(');
+
+        /* create new table */
+        int pc = luaK_codeABC(fs, OP_NEWTABLE, 0, 0, 0);
+        ConsControl cc;
+        luaK_code(fs, 0);  /* space for extra arg. */
+        cc.na = cc.nh = cc.tostore = 0;
+        cc.t = v;
+        init_exp(v, VNONRELOC, fs->freereg);  /* table will be at stack top */
+        luaK_reserveregs(fs, 1);
+        init_exp(&cc.v, VVOID, 0);  /* no value (yet) */
+
+        while (ls->t.token != ')') {
+            TString *varname = str_checkname(ls);
+            expdesc key, val;
+
+            codestring(&key, varname);
+            singlevaraux(fs, varname, &val, 1);
+            if (val.k == VVOID) { /* global? */
+                expdesc k;
+                singlevaraux(fs, ls->envn, &val, 1);
+                codestring(&k, varname);
+                luaK_indexed(fs, &val, &k);
+            }
+
+            cc.nh++;
+
+            /* t[key] = val */
+            expdesc tab = *cc.t;
+            luaK_indexed(fs, &tab, &key);
+            luaK_storevar(fs, &tab, &val);
+
+            if (ls->t.token == ',') luaX_next(ls);
+            else break;
+        }
+        checknext(ls, ')');
+        luaK_settablesize(fs, pc, v->u.info, cc.na, cc.nh);
+        return;
+      }
+
       /* Check for compile-time function call support here? */
       /* For simplicity in this step, we keep the _KEYWORDS fallback but TODO: add const expr support */
       /* We can implement a check here: if kwname matches a standard lib, try to execute */
@@ -2348,6 +2540,7 @@ static void suffixedexp (LexState *ls, expdesc *v) {
         break;
       }
       case ':': {  /* ':' NAME funcargs */
+        if (ls->expr_flags & E_NO_COLON) return;
         expdesc key;
         luaX_next(ls);
         codename(ls, &key);
@@ -2552,10 +2745,35 @@ static void suffixedexp (LexState *ls, expdesc *v) {
 }
 
 
+static void ifexpr (LexState *ls, expdesc *v) {
+  FuncState *fs = ls->fs;
+  int condition;
+  int escape = NO_JUMP;
+  int reg;
+
+  luaX_next(ls); /* skip IF */
+  condition = cond(ls);
+  checknext(ls, TK_THEN);
+  expr(ls, v);
+  luaK_exp2nextreg(fs, v);
+  reg = v->u.info;
+  luaK_concat(fs, &escape, luaK_jump(fs));
+  luaK_patchtohere(fs, condition);
+  checknext(ls, TK_ELSE);
+  expr(ls, v);
+  checknext(ls, TK_END);
+  luaK_exp2reg(fs, v, reg);
+  luaK_patchtohere(fs, escape);
+}
+
 static void simpleexp (LexState *ls, expdesc *v) {
   /* simpleexp -> FLT | INT | NIL | TRUE | FALSE | ... |
                   constructor | FUNCTION body | suffixedexp */
   switch (ls->t.token) {
+    case TK_IF: {
+      ifexpr(ls, v);
+      return;
+    }
     case TK_FLT: {
       init_exp(v, VKFLT, 0);
       v->u.nval = ls->t.seminfo.r;
@@ -3114,13 +3332,15 @@ static void simpleexp (LexState *ls, expdesc *v) {
       open_func(ls, &new_fs, &bl);
       
       /* 解析参数列表（可选） */
+      TString *varargname = NULL;
       if (testnext(ls, '(')) {
-        parlist(ls);
+        parlist(ls, &varargname);
         checknext(ls, ')');
       }
       
       /* 解析函数体 { stat } */
       checknext(ls, '{');
+      if (varargname) namedvararg(ls, varargname);
       while (ls->t.token != '}' && ls->t.token != TK_EOS) {
         if (ls->t.token == TK_RETURN) {
           statement(ls);
@@ -3154,13 +3374,15 @@ static void simpleexp (LexState *ls, expdesc *v) {
       open_func(ls, &new_fs, &bl);
       
       /* 解析参数列表（可选） */
+      TString *varargname = NULL;
       if (testnext(ls, '(')) {
-        parlist(ls);
+        parlist(ls, &varargname);
         checknext(ls, ')');
       }
       
       /* 解析函数体 { exp } - 自动返回表达式 */
       checknext(ls, '{');
+      if (varargname) namedvararg(ls, varargname);
       enterlevel(ls);
       retstat(ls);  /* 将表达式作为return语句处理 */
       lua_assert(ls->fs->f->maxstacksize >= ls->fs->freereg &&
@@ -3501,6 +3723,39 @@ static BinOpr subexpr (LexState *ls, expdesc *v, int limit) {
 
 static void expr (LexState *ls, expdesc *v) {
   subexpr(ls, v, 0);
+  if (ls->t.token == '?') {
+    /* printf("DEBUG: Ternary found at line %d\n", ls->linenumber); */
+    int escape = NO_JUMP;
+    int condition;
+    int reg;
+    FuncState *fs = ls->fs;
+
+    luaX_next(ls); /* skip '?' */
+
+    /* condition is in v */
+    if (v->k == VNIL) v->k = VFALSE;
+    luaK_goiftrue(fs, v);
+    condition = v->f;
+
+    /* true branch */
+    int old_flags = ls->expr_flags;
+    ls->expr_flags |= E_NO_COLON;
+    expr(ls, v);
+    ls->expr_flags = old_flags;
+    luaK_exp2nextreg(fs, v);
+    reg = v->u.info;
+
+    luaK_concat(fs, &escape, luaK_jump(fs));
+    luaK_patchtohere(fs, condition);
+
+    checknext(ls, ':');
+
+    /* false branch */
+    expr(ls, v);
+    luaK_exp2reg(fs, v, reg);
+
+    luaK_patchtohere(fs, escape);
+  }
 }
 
 
@@ -3860,7 +4115,7 @@ static void gotostat (LexState *ls) {
   int line = ls->linenumber;
   if (ls->t.token == TK_CONTINUE) {
     luaX_next(ls);
-    breakstat(ls);
+    newgotoentry(ls, luaS_newliteral(ls->L, "continue"), line, luaK_jump(fs));
     return;
   }
   TString *name = str_checkname(ls);  /* label's name */
@@ -4117,6 +4372,8 @@ static int test_then_block (LexState *ls, int *escapelist) {
     luaX_next(ls);  /* skip '{' */
   } else if (ls->t.token == TK_THEN) {
     luaX_next(ls);  /* skip 'then' */
+  } else if (ls->t.token == TK_DO) {
+    luaX_next(ls);  /* skip 'do' (Universal Block Opener) */
   }
   
   if (ls->t.token == TK_BREAK||ls->t.token==TK_CONTINUE) {  /* 'if x then break' ? */
@@ -4725,6 +4982,9 @@ static void localfunc (LexState *ls, int isexport) {
   if (isexport) add_export(ls, name);
   adjustlocalvars(ls, 1);  /* enter its scope */
   body(ls, &b, 0, ls->linenumber);  /* function created in next register */
+  if (fs->f->p[fs->np - 1]->nodiscard) {
+     getlocalvardesc(fs, fvar)->vd.nodiscard = 1;
+  }
   /* debug information will only see the variable after this point! */
   localdebuginfo(fs, fvar)->startpc = fs->pc;
 }
@@ -5117,7 +5377,329 @@ static void takestat_full(LexState *ls) {
   adjustlocalvars(ls, nvars);
 }
 
+/* ========================================================================= */
+/* TYPE HINTING AND DESTRUCTURING SUPPORT                                   */
+/* ========================================================================= */
+
+static TypeHint *typehint_new(LexState *ls) {
+  TypeHint *th = luaM_new(ls->L, TypeHint);
+  for (int i = 0; i < MAX_TYPE_DESCS; i++) {
+    th->descs[i].type = VT_NONE;
+    th->descs[i].nparam = -1;
+    th->descs[i].nret = -1;
+    th->descs[i].proto = NULL;
+    th->descs[i].nfields = -1;
+  }
+  th->next = ls->all_type_hints;
+  ls->all_type_hints = th;
+  return th;
+}
+
+static void typehint_free(LexState *ls) {
+  TypeHint *curr = ls->all_type_hints;
+  while (curr) {
+    TypeHint *next = curr->next;
+    luaM_free(ls->L, curr);
+    curr = next;
+  }
+  ls->all_type_hints = NULL;
+}
+
+static void th_emplace_desc(TypeHint *th, TypeDesc td) {
+  for (int i = 0; i < MAX_TYPE_DESCS; i++) {
+    if (th->descs[i].type == td.type) return; /* Already present */
+    if (th->descs[i].type == VT_NONE) {
+      th->descs[i] = td;
+      return;
+    }
+  }
+  /* Full: degrade to ANY */
+  th->descs[0].type = VT_ANY;
+  th->descs[1].type = VT_NONE;
+  th->descs[2].type = VT_NONE;
+}
+
+static void checktypehint (LexState *ls, TypeHint *th);
+
+static TypeHint* get_named_type_opt(LexState* ls, const TString* name) {
+  const TValue *o = luaH_getstr(ls->named_types, name);
+  if (!ttisnil(o)) {
+    return (TypeHint*)pvalue(o);
+  }
+  /* printf("DEBUG: named type '%s' not found\n", getstr(name)); */
+  return NULL;
+}
+
+static void checktypehint (LexState *ls, TypeHint *th) {
+  if (testnext(ls, '?')) {
+    TypeDesc td; td.type = VT_NULL;
+    th_emplace_desc(th, td);
+  }
+  do {
+    if (ls->t.token == '{') { /* Table type */
+      luaX_next(ls);
+      TypeDesc td;
+      td.type = VT_TABLE;
+      td.nfields = 0;
+      while (ls->t.token != '}') {
+        TString *ts = str_checkname(ls);
+        checknext(ls, ':');
+        TypeHint *fieldth = typehint_new(ls);
+        checktypehint(ls, fieldth);
+        if (td.nfields < MAX_TYPED_FIELDS) {
+          td.names[td.nfields] = ts;
+          td.hints[td.nfields] = fieldth;
+          td.nfields++;
+        }
+        if (!testnext(ls, ',') && !testnext(ls, ';')) break;
+      }
+      checknext(ls, '}');
+      th_emplace_desc(th, td);
+      continue;
+    }
+    
+    const char *tname;
+    TString *ts = NULL;
+    if (ls->t.token == TK_FUNCTION) {
+       tname = "function";
+       luaX_next(ls);
+    } else {
+       ts = str_checkname(ls);
+       tname = getstr(ts);
+    }
+
+    TypeDesc td;
+    td.type = VT_NONE;
+    
+    if (strcmp(tname, "number") == 0) td.type = VT_NUMBER;
+    else if (strcmp(tname, "int") == 0 || strcmp(tname, "integer") == 0) td.type = VT_INT;
+    else if (strcmp(tname, "float") == 0) td.type = VT_FLT;
+    else if (strcmp(tname, "table") == 0) td.type = VT_TABLE;
+    else if (strcmp(tname, "string") == 0) td.type = VT_STR;
+    else if (strcmp(tname, "boolean") == 0 || strcmp(tname, "bool") == 0) td.type = VT_BOOL;
+    else if (strcmp(tname, "function") == 0) {
+      td.type = VT_FUNC;
+      td.nparam = -1;
+      td.nret = -1;
+      if (testnext(ls, '(')) {
+         /* Parse params */
+         td.nparam = 0;
+         if (ls->t.token != ')') {
+           do {
+             if (ls->t.token == TK_NAME && luaX_lookahead(ls) == ':') {
+               checknext(ls, TK_NAME); /* name */
+               checknext(ls, ':');
+             }
+             if (td.nparam < MAX_TYPED_PARAMS) {
+               td.params[td.nparam] = typehint_new(ls);
+               checktypehint(ls, td.params[td.nparam]);
+               td.nparam++;
+             } else {
+               TypeHint *ign = typehint_new(ls);
+               checktypehint(ls, ign);
+             }
+           } while (testnext(ls, ','));
+         }
+         checknext(ls, ')');
+      }
+      if (ls->t.token == ':') {
+         luaX_next(ls);
+         td.nret = 0;
+         if (testnext(ls, '(')) {
+             do {
+                 if (td.nret < MAX_TYPED_RETURNS) {
+                     td.returns[td.nret] = typehint_new(ls);
+                     checktypehint(ls, td.returns[td.nret]);
+                     td.nret++;
+                 } else {
+                     TypeHint *ign = typehint_new(ls);
+                     checktypehint(ls, ign);
+                 }
+             } while (testnext(ls, ','));
+             checknext(ls, ')');
+         } else {
+             /* Single return type or void */
+             if (ls->t.token == TK_NAME && strcmp(getstr(ls->t.seminfo.ts), "void") == 0) {
+                 luaX_next(ls);
+                 td.nret = 0;
+             } else {
+                 td.nret = 1;
+                 td.returns[0] = typehint_new(ls);
+                 checktypehint(ls, td.returns[0]);
+             }
+         }
+      }
+    }
+    else if (strcmp(tname, "any") == 0) td.type = VT_ANY;
+    else if (strcmp(tname, "nil") == 0) td.type = VT_NIL;
+    else if (strcmp(tname, "void") == 0) {
+       td.type = VT_NULL;
+    }
+    else if (strcmp(tname, "userdata") == 0) td.type = VT_USERDATA;
+    else {
+      TypeHint *named = get_named_type_opt(ls, ts);
+      if (named) {
+        /* Merge named type */
+        for (int i=0; i<MAX_TYPE_DESCS; i++) {
+           if (named->descs[i].type != VT_NONE)
+             th_emplace_desc(th, named->descs[i]);
+        }
+        td.type = VT_NONE; /* processed */
+      } else {
+        luaX_syntaxerror(ls, luaO_pushfstring(ls->L, "unknown type hint '%s'", tname));
+      }
+    }
+    
+    if (td.type != VT_NONE) th_emplace_desc(th, td);
+    
+  } while (testnext(ls, '|'));
+  
+  if (testnext(ls, '?')) {
+     TypeDesc td; td.type = VT_NULL;
+     th_emplace_desc(th, td);
+  }
+}
+
+static TypeHint *gettypehint (LexState *ls) {
+  if (testnext(ls, ':')) {
+    TypeHint *th = typehint_new(ls);
+    checktypehint(ls, th);
+    return th;
+  }
+  return NULL;
+}
+
+static void check_type_compatibility(LexState *ls, TypeHint *target, expdesc *e) {
+  /* Very basic check for literals */
+  if (!target || !e) return;
+  
+  ValType e_type = VT_NONE;
+  if (e->k == VKINT) e_type = VT_INT;
+  else if (e->k == VKFLT) e_type = VT_FLT;
+  else if (e->k == VKSTR) e_type = VT_STR;
+  else if (e->k == VTRUE || e->k == VFALSE) e_type = VT_BOOL;
+  else if (e->k == VNIL) e_type = VT_NIL;
+  
+  if (e_type == VT_NONE) return; /* Unknown compile time type */
+  
+  int compatible = 0;
+  for (int i=0; i<MAX_TYPE_DESCS; i++) {
+    ValType t = target->descs[i].type;
+    if (t == VT_ANY) { compatible = 1; break; }
+    if (t == e_type) { compatible = 1; break; }
+    if (t == VT_NUMBER && (e_type == VT_INT || e_type == VT_FLT)) { compatible = 1; break; }
+    if (t == VT_BOOL && (e_type == VT_BOOL)) { compatible = 1; break; }
+    if (t == VT_NULL && e_type == VT_NIL) { compatible = 1; break; }
+  }
+  
+  if (!compatible) {
+    luaX_warning(ls, "type mismatch", WT_TYPE_MISMATCH);
+  }
+}
+
+/* Destructuring support */
+static void destructuring (LexState *ls) {
+   /* local {a, b} = t */
+   TString *names[MAXVARS];
+   int nnames = 0;
+   luaX_next(ls); /* skip { */
+   do {
+     names[nnames++] = str_checkname(ls);
+   } while (testnext(ls, ',') && nnames < MAXVARS);
+   checknext(ls, '}');
+   
+   checknext(ls, '=');
+   expdesc e;
+   expr(ls, &e);
+   
+   int base = luaY_nvarstack(ls->fs);
+   
+   /* Move table to safe reg */
+   luaK_exp2reg(ls->fs, &e, base + nnames);
+   int tbl_reg = base + nnames;
+   /* Reserve registers for locals + table temp */
+   if (ls->fs->freereg < tbl_reg + 1)
+       ls->fs->freereg = tbl_reg + 1;
+   
+   for (int i=0; i<nnames; i++) {
+     new_localvar(ls, names[i]);
+     
+     expdesc t;
+     init_exp(&t, VNONRELOC, tbl_reg); 
+     expdesc k;
+     init_exp(&k, VKSTR, 0);
+     k.u.strval = names[i];
+     
+     luaK_indexed(ls->fs, &t, &k); 
+     /* 't' now contains the indexed variable expression */
+     
+     expdesc lvar;
+     init_exp(&lvar, VLOCAL, 0);
+     lvar.u.var.vidx = 0;
+     lvar.u.var.ridx = base + i;
+     
+     luaK_storevar(ls->fs, &lvar, &t);
+   }
+   
+   adjustlocalvars(ls, nnames);
+   ls->fs->freereg = base + nnames;
+}
+
+static void arraydestructuring (LexState *ls) {
+   /* local [a, b] = t */
+   TString *names[MAXVARS];
+   int nnames = 0;
+   luaX_next(ls); /* skip [ */
+   do {
+     names[nnames++] = str_checkname(ls);
+   } while (testnext(ls, ',') && nnames < MAXVARS);
+   checknext(ls, ']');
+   
+   checknext(ls, '=');
+   expdesc e;
+   expr(ls, &e);
+   
+   int base = luaY_nvarstack(ls->fs);
+   
+   /* Move table to safe reg */
+   luaK_exp2reg(ls->fs, &e, base + nnames);
+   int tbl_reg = base + nnames;
+   /* Reserve registers for locals + table temp */
+   if (ls->fs->freereg < tbl_reg + 1)
+       ls->fs->freereg = tbl_reg + 1;
+   
+   for (int i=0; i<nnames; i++) {
+     new_localvar(ls, names[i]);
+     expdesc t;
+     init_exp(&t, VNONRELOC, tbl_reg); 
+     expdesc k;
+     init_exp(&k, VKINT, 0);
+     k.u.ival = i + 1;
+     
+     luaK_indexed(ls->fs, &t, &k); 
+     /* 't' now contains the indexed variable expression */
+     
+     expdesc lvar;
+     init_exp(&lvar, VLOCAL, 0);
+     lvar.u.var.vidx = 0;
+     lvar.u.var.ridx = base + i;
+     
+     luaK_storevar(ls->fs, &lvar, &t);
+   }
+   
+   adjustlocalvars(ls, nnames);
+   ls->fs->freereg = base + nnames;
+}
+
 static void localstat (LexState *ls, int isexport) {
+  if (ls->t.token == '{') {
+    destructuring(ls);
+    return;
+  }
+  if (ls->t.token == '[') {
+    arraydestructuring(ls);
+    return;
+  }
   /* stat -> LOCAL ATTRIB NAME ATTRIB { ',' NAME ATTRIB } ['=' explist] */
   /* stat -> CONST NAME ATTRIB { ',' NAME ATTRIB } ['=' explist] */
   FuncState *fs = ls->fs;
@@ -5150,6 +5732,7 @@ static void localstat (LexState *ls, int isexport) {
       }
     }
     vidx = new_localvar(ls, varname);
+    getlocalvardesc(fs, vidx)->vd.hint = gettypehint(ls);
     if (isexport) {
         add_export(ls, varname);
     }
@@ -5157,8 +5740,13 @@ static void localstat (LexState *ls, int isexport) {
     getlocalvardesc(fs, vidx)->vd.kind = kind;
     nvars++;
   } while (testnext(ls, ','));
-  if (testnext(ls, '='))
+  if (testnext(ls, '=')) {
     nexps = explist(ls, &e);
+    if (nvars == nexps) {
+       Vardesc *lastvar = getlocalvardesc(fs, vidx);
+       check_type_compatibility(ls, lastvar->vd.hint, &e);
+    }
+  }
   else {
     e.k = VVOID;
     nexps = 0;
@@ -7775,8 +8363,8 @@ static void class_method(LexState *ls, int class_reg, int is_static, int access_
   TString *method_name = str_checkname(ls);
   
   /* 生成方法体 */
-  /* ismethod=0: 用户需要手动在参数列表中写 self */
-  body(ls, &method_exp, 0, line);
+  /* 非静态方法自动添加 self 参数 */
+  body(ls, &method_exp, !is_static, line);
   
   /* 将方法存储到类表中 */
   int methods_reg = fs->freereg;
@@ -8191,6 +8779,8 @@ static void classstat(LexState *ls, int line, int class_flags, int isexport) {
     } while (testnext(ls, ','));
   }
   
+  testnext(ls, TK_DO); /* Optional Universal Block Opener */
+
   /* 解析类体 */
   while (!testnext(ls, TK_END)) {
     if (ls->t.token == TK_EOS) {
@@ -8449,6 +9039,8 @@ static void enumstat(LexState *ls, int line, int isexport) {
   if (ls->t.token == '{') {
     use_brace = 1;
     luaX_next(ls);  /* 跳过 '{' */
+  } else {
+    testnext(ls, TK_DO); /* Optional Universal Block Opener */
   }
   
   /* 创建枚举表 */
@@ -8856,6 +9448,9 @@ static void exprstat (LexState *ls) {
     check_condition(ls, v.v.k == VCALL, "syntax error");
     inst = &getinstruction(fs, &v.v);
     SETARG_C(*inst, 1);  /* call statement uses no results */
+    if (v.v.nodiscard) {
+       luaX_warning(ls, "discarding return value of function declared '<nodiscard>'", WT_DISCARDED_RETURN);
+    }
   }
 }
 
@@ -8930,6 +9525,12 @@ static int try_command_call (LexState *ls) {
   
   /* 检查是否是 TK_NAME 后面跟着参数 */
   if (ls->t.token != TK_NAME) {
+    return 0;
+  }
+
+  /* Check if it is a soft keyword that starts an expression (like new, super) */
+  if (softkw_test(ls, SKW_NEW, SOFTKW_CTX_EXPR) ||
+      softkw_test(ls, SKW_SUPER, SOFTKW_CTX_EXPR)) {
     return 0;
   }
   
@@ -9151,7 +9752,9 @@ static int is_preprocessor_directive(const char *name) {
          strcmp(name, "else") == 0 ||
          strcmp(name, "elseif") == 0 ||
          strcmp(name, "end") == 0 ||
-         strcmp(name, "haltcompiler") == 0;
+         strcmp(name, "haltcompiler") == 0 ||
+         strcmp(name, "type") == 0 ||
+         strcmp(name, "declare") == 0;
 }
 
 static void parse_alias(LexState *ls) {
@@ -9197,8 +9800,6 @@ static int eval_const_condition(LexState *ls) {
      val = 0;
   }
   luaX_next(ls); /* consume value */
-
-  /* consume trailing tokens in condition if any (e.g. 'then' if user typed it, though pluto uses none or 'then') */
   if (ls->t.token == TK_THEN) luaX_next(ls);
 
   return val;
@@ -9379,6 +9980,68 @@ static void constexprstat (LexState *ls) {
   else if (strcmp(name, "define") == 0) {
      constexprdefinestat(ls);
   }
+  else if (strcmp(name, "type") == 0) {
+     luaX_next(ls); /* skip 'type' */
+     TString *name = str_checkname(ls);
+     checknext(ls, '=');
+     TypeHint *th = typehint_new(ls);
+     checktypehint(ls, th);
+     
+     TValue key, val;
+     setsvalue(ls->L, &key, name);
+     setpvalue(&val, th);
+     luaH_set(ls->L, ls->named_types, &key, &val);
+     /* printf("DEBUG: defined type '%s'\n", getstr(name)); */
+  }
+  else if (strcmp(name, "declare") == 0) {
+     luaX_next(ls); /* skip 'declare' */
+     TString *name = str_checkname(ls);
+     TypeHint *th = NULL;
+     int nodiscard = 0;
+
+     if (testnext(ls, ':')) {
+        th = typehint_new(ls);
+        checktypehint(ls, th);
+     }
+
+     if (testnext(ls, '<')) {
+        if (ls->t.token == TK_NAME) {
+           const char *attr = getstr(ls->t.seminfo.ts);
+           if (strcmp(attr, "nodiscard") == 0) {
+              nodiscard = 1;
+           }
+           luaX_next(ls);
+        }
+        checknext(ls, '>');
+     }
+
+     TValue key, val;
+     setsvalue(ls->L, &key, name);
+
+     Table *decl = luaH_new(ls->L);
+     sethvalue2s(ls->L, ls->L->top.p, decl);
+     ls->L->top.p++;
+
+     if (nodiscard) {
+        TValue k, v;
+        setsvalue(ls->L, &k, luaS_newliteral(ls->L, "nodiscard"));
+        setbtvalue(&v);
+        luaH_set(ls->L, decl, &k, &v);
+     }
+
+     if (th) {
+        TValue k, v;
+        setsvalue(ls->L, &k, luaS_newliteral(ls->L, "type"));
+        setpvalue(&v, th);
+        luaH_set(ls->L, decl, &k, &v);
+     }
+
+     sethvalue(ls->L, &val, decl);
+
+     luaH_set(ls->L, ls->declared_globals, &key, &val);
+
+     ls->L->top.p--; /* pop decl */
+  }
   else {
      /* unknown directive - ignore line */
      luaX_next(ls);
@@ -9553,7 +10216,6 @@ static void statement (LexState *ls) {
       if (ls->t.token == TK_CONTINUE) {
         TString *name = luaS_newliteral(ls->L, "continue");
         luaX_next(ls);
-        checknext(ls, TK_DBCOLON);
         labelstat(ls, name, line);
       } else {
         labelstat(ls, str_checkname(ls), line);
@@ -9693,6 +10355,13 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   lexstate.h = luaH_new(L);  /* create table for scanner */
   sethvalue2s(L, L->top.p, lexstate.h);  /* anchor it */
   luaD_inctop(L);
+  lexstate.named_types = luaH_new(L);  /* create table for named types */
+  sethvalue2s(L, L->top.p, lexstate.named_types);  /* anchor it */
+  luaD_inctop(L);
+  lexstate.declared_globals = luaH_new(L); /* create table for declared globals */
+  sethvalue2s(L, L->top.p, lexstate.declared_globals); /* anchor it */
+  luaD_inctop(L);
+  lexstate.all_type_hints = NULL;
   funcstate.f = cl->p = luaF_newproto(L);
   luaC_objbarrier(L, cl, cl->p);
   funcstate.f->source = luaS_new(L, name);  /* create and anchor TString */
@@ -9707,6 +10376,9 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
   lua_assert(!funcstate.prev && funcstate.nups == 1 && !lexstate.fs);
   /* all scopes should be correctly finished */
   lua_assert(dyd->actvar.n == 0 && dyd->gt.n == 0 && dyd->label.n == 0);
+  typehint_free(&lexstate);
+  L->top.p--;  /* remove declared globals table */
+  L->top.p--;  /* remove named types table */
   L->top.p--;  /* remove scanner's table */
   return cl;  /* closure is on the stack, too */
 }

@@ -26,6 +26,7 @@ public enum Tokens {
     ENUM,
     FOR,
     IN,
+    AS,             // as (类型转换)
     LOCAL,
     REPEAT,
     RETURN,

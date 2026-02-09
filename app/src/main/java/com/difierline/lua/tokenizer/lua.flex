@@ -217,6 +217,7 @@ Number = {DecNumber} | {HexNumber} | {BinNumber}
   "goto"                    { return GOTO; }
   "if"                      { return IF; }
   "in"                      { return IN; }
+  "as"                      { return AS; }
   "is"                      { return IS; }
   "lambda"                  { return LAMBDA; }
   "local"                   { return LOCAL; }

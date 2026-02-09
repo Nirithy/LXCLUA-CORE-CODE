@@ -225,7 +225,7 @@ public class LuaIncrementalAnalyzeManager
     private boolean isLuaKeyword(String word) {
         Set<String> keywords = new HashSet<>(Arrays.asList(
             "and", "break", "do", "else", "elseif", "end", "false", "for",
-            "function", "goto", "if", "in", "local", "nil", "not", "or",
+            "function", "goto", "if", "in", "as", "local", "nil", "not", "or",
             "repeat", "return", "then", "true", "until", "while", "export"
         ));
         return keywords.contains(word);
@@ -860,6 +860,7 @@ public class LuaIncrementalAnalyzeManager
                 case ENUM:
                 case FOR:
                 case IN:
+                case AS:
                 case IS:
                 case REPEAT:
                 case RETURN:
