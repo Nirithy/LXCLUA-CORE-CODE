@@ -146,7 +146,11 @@ public enum Tokens {
     PUBLIC,         // public (公开成员)
     STATIC,         // static (静态成员)
     SUPER,          // super (调用父类)
-    
+
+    // 异步关键字
+    ASYNC,          // async (异步函数声明)
+    AWAIT,          // await (等待异步结果)
+
     ARROW_LEFT_LONG,      // <--
     ARROW_RIGHT_LONG,     // -->
     SPACESHIP,            // <=>

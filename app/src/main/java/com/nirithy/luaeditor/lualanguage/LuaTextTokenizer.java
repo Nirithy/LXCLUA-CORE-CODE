@@ -1302,6 +1302,8 @@ public class LuaTextTokenizer {
                     "export"
                 };
         Tokens[] sTokens = {
+            Tokens.ASYNC,
+            Tokens.AWAIT,
             Tokens.AND,
             Tokens.BREAK,
             Tokens.CONST,
