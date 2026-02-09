@@ -1295,7 +1295,8 @@ public class LuaTextTokenizer {
                     "loadfile",
                     "rawlen",
                     "debug",
-                    "package"
+                    "package",
+                    "export"
                 };
         Tokens[] sTokens = {
             Tokens.AND,
@@ -1382,7 +1383,8 @@ public class LuaTextTokenizer {
             Tokens.LOADFILE,
             Tokens.RAWLEN,
             Tokens.DEBUG,
-            Tokens.PACKAGE
+            Tokens.PACKAGE,
+            Tokens.EXPORT
         };
         keywords = new TrieTree<>();
         for (int i = 0; i < sKeywords.length; i++) {

@@ -129,6 +129,7 @@ public enum Tokens {
     RAWLEN,         // rawlen (原始长度)
     DEBUG,          // debug (调试库)
     PACKAGE,        // package (包管理)
+    EXPORT,         // export (导出关键字)
     
     // OOP 面向对象关键字
     ABSTRACT,       // abstract (抽象方法/类)

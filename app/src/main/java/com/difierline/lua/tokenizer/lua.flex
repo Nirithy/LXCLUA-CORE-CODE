@@ -237,6 +237,7 @@ Number = {DecNumber} | {HexNumber} | {BinNumber}
   "keyword"                 { return KEYWORD; }
   "operator"                { return OPERATOR_KW; }
   "$"                       { return DOLLAR; }
+  "export"                  { return EXPORT; }
   /* OOP 面向对象关键字 */
   "abstract"                { return ABSTRACT; }
   "class"                   { return CLASS; }

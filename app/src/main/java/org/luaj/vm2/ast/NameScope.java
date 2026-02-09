@@ -36,7 +36,7 @@ public class NameScope {
 	        "and", "break", "do", "else", "elseif", "end", 
 	        "false", "for", "function", "if", "in", "local",
 	        "nil", "not", "or", "repeat", "return", 
-	        "then", "true", "until", "while" };
+	        "then", "true", "until", "while", "export" };
 		for ( int i=0; i<k.length; i++ )
 			LUA_KEYWORDS.add( k[i] );
 	}
