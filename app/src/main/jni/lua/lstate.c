@@ -86,7 +86,7 @@ void luaE_setdebt (global_State *g, l_mem debt) {
   if (debt < tb - MAX_LMEM)
     debt = tb - MAX_LMEM;  /* will make 'GCtotalbytes == MAX_LMEM' */
   g->GCtotalbytes = tb - debt;
-  g->GCdebt = debt;
+  l_atomic_store(&g->GCdebt, debt);
 }
 
 
@@ -274,6 +274,7 @@ static void close_state (lua_State *L) {
   }
   luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
   luaM_poolshutdown(L);  /* 关闭内存池 */
+  l_mutex_destroy(&g->lock);
   freestack(L);
   lua_assert(gettotalbytes(g) == sizeof(LG));
   (*g->frealloc)(g->ud, fromstate(L), sizeof(LG), 0);  /* free main block */
@@ -393,7 +394,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud, unsigned seed) {
   g->weak = g->ephemeron = g->allweak = NULL;
   g->twups = NULL;
   g->GCtotalbytes = sizeof(LG);
-  g->GCdebt = 0;
+  l_atomic_store(&g->GCdebt, 0);
   g->lastatomic = 0;
   setivalue(&g->nilvalue, 0);  /* to signal that state is not yet built */
   setgcparam(g->gcpause, LUAI_GCPAUSE);
@@ -404,6 +405,7 @@ LUA_API lua_State *lua_newstate (lua_Alloc f, void *ud, unsigned seed) {
   for (i=0; i < LUA_NUMTAGS; i++) g->mt[i] = NULL;
   g->vm_code_list = NULL;  /* 初始化VM代码表链表 */
   luaM_poolinit(L);  /* 初始化内存池 */
+  l_mutex_init(&g->lock);
   if (luaD_rawrunprotected(L, f_luaopen, NULL) != LUA_OK) {
     /* memory allocation error: free partial state */
     close_state(L);
