@@ -96,6 +96,8 @@ public final class AutoCompletePackages {
                     "lrotate", "lshift", "replace", "rrotate", "rshift"));
             put("userdata", Arrays.asList(
                     "isuserdata", "islight", "type", "equals", "tostring", "address", "fromany"));
+            put("thread", Arrays.asList(
+                    "create", "createx"));
             put("vm", Arrays.asList(
                     "execute", "concat", "objlen", "equal", "lt", "le", "tonumber", "tointeger",
                     "gcinfo", "gettop", "memory", "gcstep", "gccollect", "newthread", "status",

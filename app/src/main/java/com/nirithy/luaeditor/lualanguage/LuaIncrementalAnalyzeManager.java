@@ -146,7 +146,7 @@ public class LuaIncrementalAnalyzeManager
             "require", "load", "loadfile","loadsfile", "loadstring",
             // 标准库
             "string", "table", "math", "io", "os", "debug", "coroutine", "package",
-            "utf8", "bit32",
+            "utf8", "bit32","thread",
             // 常用全局对象
             "_G", "_VERSION", "_ENV", "arg",
             // 你项目中的全局对象
