@@ -4960,7 +4960,6 @@ static void fornum (LexState *ls, TString *varname, int line) {
   int base = fs->freereg;
   new_localvarliteral(ls, "(for state)");
   new_localvarliteral(ls, "(for state)");
-  new_localvarliteral(ls, "(for state)");
   new_varkind(ls, varname, RDKCONST);  /* 控制变量设为只读常量 */
   checknext(ls, '=');
   exp1(ls);  /* initial value */
@@ -4972,7 +4971,7 @@ static void fornum (LexState *ls, TString *varname, int line) {
     luaK_int(fs, fs->freereg, 1);
     luaK_reserveregs(fs, 1);
   }
-  adjustlocalvars(ls, 3);  /* control variables */
+  adjustlocalvars(ls, 2);  /* control variables */
   forbody(ls, base, line, 1, 0);
 }
 
@@ -4981,11 +4980,10 @@ static void forlist (LexState *ls, TString *indexname) {
   /* forlist -> NAME {,NAME} IN explist forbody */
   FuncState *fs = ls->fs;
   expdesc e;
-  int nvars = 5;  /* gen, state, control, toclose, 'indexname' */
+  int nvars = 4;  /* gen, state, control, toclose, 'indexname' */
   int line;
   int base = fs->freereg;
   /* create control variables */
-  new_localvarliteral(ls, "(for state)");
   new_localvarliteral(ls, "(for state)");
   new_localvarliteral(ls, "(for state)");
   new_localvarliteral(ls, "(for state)");
@@ -4997,11 +4995,11 @@ static void forlist (LexState *ls, TString *indexname) {
   }
   if (ls->t.token == TK_IN) luaX_next(ls);
   line = ls->linenumber;
-  adjust_assign(ls, 4, explist(ls, &e), &e);
-  adjustlocalvars(ls, 4);  /* control variables */
+  adjust_assign(ls, 3, explist(ls, &e), &e);
+  adjustlocalvars(ls, 3);  /* control variables */
   marktobeclosed(fs);  /* last control var. must be closed */
   luaK_checkstack(fs, 3);  /* extra space to call generator */
-  forbody(ls, base, line, nvars - 4, 1);
+  forbody(ls, base, line, nvars - 3, 1);
 }
 
 
@@ -7355,6 +7353,12 @@ static lua_Integer asm_trygetint_ex (LexState *ls, AsmContext *ctx,
     if ((name[0] == 'R' || name[0] == 'r') && name[1] >= '0' && name[1] <= '9') {
       return asm_getint_ex(ls, ctx, pendingPc, pendingLabel, isLabelRef);
     }
+    /* Check defines */
+    if (ctx != NULL) {
+       if (asm_finddefine_ex(ctx, ls->t.seminfo.ts, NULL) >= 0) {
+          return asm_getint_ex(ls, ctx, pendingPc, pendingLabel, isLabelRef);
+       }
+    }
   }
   if (pendingPc) *pendingPc = -1;
   if (pendingLabel) *pendingLabel = NULL;
@@ -7689,6 +7693,112 @@ static void asmstat_ex (LexState *ls, int line, AsmContext *parent_ctx) {
       /* 添加到常量定义表 */
       asm_adddefine(ls, &ctx, def_name, def_value);
       
+      testnext(ls, ';');
+      continue;
+    }
+
+    /* newreg 伪指令: newreg name - 分配新寄存器并定义常量 */
+    if (strcmp(opname, "newreg") == 0) {
+      TString *reg_name;
+      luaX_next(ls);  /* 跳过 'newreg' */
+
+      check(ls, TK_NAME);
+      reg_name = ls->t.seminfo.ts;
+      luaX_next(ls);  /* 跳过寄存器名 */
+
+      /* 分配新寄存器 */
+      int reg = fs->freereg;
+      luaK_reserveregs(fs, 1);
+
+      /* 定义为常量 */
+      asm_adddefine(ls, &ctx, reg_name, reg);
+
+      testnext(ls, ';');
+      continue;
+    }
+
+    /* getglobal 伪指令: getglobal reg "name" - 获取全局变量 */
+    if (strcmp(opname, "getglobal") == 0) {
+      int reg_dest;
+      TString *key_name;
+      luaX_next(ls);  /* 跳过 'getglobal' */
+
+      /* 解析目标寄存器 */
+      reg_dest = (int)asm_getint_ex(ls, &ctx, NULL, NULL, NULL);
+
+      /* 解析变量名 */
+      if (ls->t.token == TK_STRING || ls->t.token == TK_RAWSTRING) {
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      } else {
+        check(ls, TK_NAME);
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      }
+
+      /* 获取 _ENV 上值 */
+      expdesc env_exp;
+      singlevaraux(fs, ls->envn, &env_exp, 1);
+      if (env_exp.k != VUPVAL) {
+        luaK_semerror(ls, "cannot resolve _ENV for getglobal");
+      }
+      int env_idx = env_exp.u.info;
+
+      /* 获取常量索引 */
+      int k = luaK_stringK(fs, key_name);
+
+      /* 生成 GETTABUP 指令 */
+      Instruction inst = CREATE_ABCk(OP_GETTABUP, reg_dest, env_idx, k, 0);
+      luaK_code(fs, inst);
+      luaK_fixline(fs, line);
+
+      /* 更新 freereg */
+      if (reg_dest >= fs->freereg) {
+        int needed = reg_dest + 1 - fs->freereg;
+        luaK_checkstack(fs, needed);
+        fs->freereg = cast_byte(reg_dest + 1);
+      }
+
+      testnext(ls, ';');
+      continue;
+    }
+
+    /* setglobal 伪指令: setglobal reg "name" - 设置全局变量 */
+    if (strcmp(opname, "setglobal") == 0) {
+      int reg_src;
+      TString *key_name;
+      luaX_next(ls);  /* 跳过 'setglobal' */
+
+      /* 解析源寄存器 */
+      reg_src = (int)asm_getint_ex(ls, &ctx, NULL, NULL, NULL);
+
+      /* 解析变量名 */
+      if (ls->t.token == TK_STRING || ls->t.token == TK_RAWSTRING) {
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      } else {
+        check(ls, TK_NAME);
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      }
+
+      /* 获取 _ENV 上值 */
+      expdesc env_exp;
+      singlevaraux(fs, ls->envn, &env_exp, 1);
+      if (env_exp.k != VUPVAL) {
+        luaK_semerror(ls, "cannot resolve _ENV for setglobal");
+      }
+      int env_idx = env_exp.u.info;
+
+      /* 获取常量索引 */
+      int k = luaK_stringK(fs, key_name);
+
+      /* 生成 SETTABUP 指令: UpValue[A][K[B]] := RK(C) */
+      /* A=env_idx, B=k, C=reg_src */
+      Instruction inst = CREATE_ABCk(OP_SETTABUP, env_idx, k, reg_src, 0);
+      luaK_code(fs, inst);
+      luaK_fixline(fs, line);
+
       testnext(ls, ';');
       continue;
     }
@@ -8632,6 +8742,81 @@ static void asm_parse_body (LexState *ls, FuncState *fs, AsmContext *ctx, int li
       luaX_next(ls);
       def_value = asm_getint_ex(ls, ctx, NULL, NULL, NULL);
       asm_adddefine(ls, ctx, def_name, def_value);
+      testnext(ls, ';');
+      continue;
+    }
+
+    /* newreg 伪指令 */
+    if (strcmp(opname, "newreg") == 0) {
+      TString *reg_name;
+      luaX_next(ls);
+      check(ls, TK_NAME);
+      reg_name = ls->t.seminfo.ts;
+      luaX_next(ls);
+      int reg = fs->freereg;
+      luaK_reserveregs(fs, 1);
+      asm_adddefine(ls, ctx, reg_name, reg);
+      testnext(ls, ';');
+      continue;
+    }
+
+    /* getglobal 伪指令 */
+    if (strcmp(opname, "getglobal") == 0) {
+      int reg_dest;
+      TString *key_name;
+      luaX_next(ls);
+      reg_dest = (int)asm_getint_ex(ls, ctx, NULL, NULL, NULL);
+      if (ls->t.token == TK_STRING || ls->t.token == TK_RAWSTRING) {
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      } else {
+        check(ls, TK_NAME);
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      }
+      expdesc env_exp;
+      singlevaraux(fs, ls->envn, &env_exp, 1);
+      if (env_exp.k != VUPVAL) {
+        luaK_semerror(ls, "cannot resolve _ENV for getglobal");
+      }
+      int env_idx = env_exp.u.info;
+      int k = luaK_stringK(fs, key_name);
+      Instruction inst = CREATE_ABCk(OP_GETTABUP, reg_dest, env_idx, k, 0);
+      luaK_code(fs, inst);
+      luaK_fixline(fs, line);
+      if (reg_dest >= fs->freereg) {
+        int needed = reg_dest + 1 - fs->freereg;
+        luaK_checkstack(fs, needed);
+        fs->freereg = cast_byte(reg_dest + 1);
+      }
+      testnext(ls, ';');
+      continue;
+    }
+
+    /* setglobal 伪指令 */
+    if (strcmp(opname, "setglobal") == 0) {
+      int reg_src;
+      TString *key_name;
+      luaX_next(ls);
+      reg_src = (int)asm_getint_ex(ls, ctx, NULL, NULL, NULL);
+      if (ls->t.token == TK_STRING || ls->t.token == TK_RAWSTRING) {
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      } else {
+        check(ls, TK_NAME);
+        key_name = ls->t.seminfo.ts;
+        luaX_next(ls);
+      }
+      expdesc env_exp;
+      singlevaraux(fs, ls->envn, &env_exp, 1);
+      if (env_exp.k != VUPVAL) {
+        luaK_semerror(ls, "cannot resolve _ENV for setglobal");
+      }
+      int env_idx = env_exp.u.info;
+      int k = luaK_stringK(fs, key_name);
+      Instruction inst = CREATE_ABCk(OP_SETTABUP, env_idx, k, reg_src, 0);
+      luaK_code(fs, inst);
+      luaK_fixline(fs, line);
       testnext(ls, ';');
       continue;
     }
