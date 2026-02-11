@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
+#include <stdint.h>
 
 #include "lua.h"
 
@@ -2590,29 +2592,21 @@ static int str_file2png (lua_State *L) {
   memset(image_data, 0, image_data_size);
   
   // 处理所有字节，确保完整转换
-  for (long i = 0; i < file_size; i++) {
-    int x = i % img_width;
-    int y = i / img_width;
-    int img_idx = (y * img_width + x) * 3;
-    unsigned char byte = file_data[i];
-    
-    // 按照用户要求的三通道存储模式
-    int channel_index;
-    int pos = i % 9;
-    if (pos == 0) channel_index = 0;    // 第1字节 → 通道1
-    else if (pos == 1) channel_index = 1;   // 第2字节 → 通道2
-    else if (pos == 2) channel_index = 2;   // 第3字节 → 通道3
-    else if (pos == 3) channel_index = 2;   // 第4字节 → 通道3
-    else if (pos == 4) channel_index = 1;   // 第5字节 → 通道2
-    else if (pos == 5) channel_index = 0;   // 第6字节 → 通道1
-    else if (pos == 6) channel_index = 2;   // 第7字节 → 通道3
-    else if (pos == 7) channel_index = 1;   // 第8字节 → 通道2
-    else channel_index = 0;   // 第9字节 → 通道1
-    image_data[img_idx + channel_index] = byte ^ 0x55;
-    // 其他通道填充0，确保图像数据正确
-    if (channel_index != 0) image_data[img_idx] = 0;
-    if (channel_index != 1) image_data[img_idx + 1] = 0;
-    if (channel_index != 2) image_data[img_idx + 2] = 0;
+  {
+    unsigned char *dst = image_data;
+    long i = 0;
+    int pos = 0;
+    static const int channel_map[] = {0, 1, 2, 2, 1, 0, 2, 1, 0};
+    for (int y = 0; y < img_height; y++) {
+      for (int x = 0; x < img_width; x++) {
+        if (i >= file_size) goto end_file_loop;
+        dst[channel_map[pos]] = file_data[i] ^ 0x55;
+        dst += 3;
+        i++;
+        if (++pos == 9) pos = 0;
+      }
+    }
+    end_file_loop:;
   }
   
   free(file_data);
@@ -2704,28 +2698,27 @@ static int str_png2file (lua_State *L) {
     return luaL_error(L, "无法创建输出文件: %s", output_path);
   }
   
-  for (long i = 0; i < actual_size; i++) {
-    int x = i % img_width;
-    int y = i / img_width;
-    int img_idx = (y * img_width + x) * 3;
-    // 按照用户要求的三通道存储模式
-    int channel_index;
-    int pos = i % 9;
-    if (pos == 0) channel_index = 0;    // 第1字节 → 通道1
-    else if (pos == 1) channel_index = 1;   // 第2字节 → 通道2
-    else if (pos == 2) channel_index = 2;   // 第3字节 → 通道3
-    else if (pos == 3) channel_index = 2;   // 第4字节 → 通道3
-    else if (pos == 4) channel_index = 1;   // 第5字节 → 通道2
-    else if (pos == 5) channel_index = 0;   // 第6字节 → 通道1
-    else if (pos == 6) channel_index = 2;   // 第7字节 → 通道3
-    else if (pos == 7) channel_index = 1;   // 第8字节 → 通道2
-    else channel_index = 0;   // 第9字节 → 通道1
-    unsigned char byte = image_data[img_idx + channel_index] ^ 0x55;
-    if (fwrite(&byte, 1, 1, fp) != 1) {
-      fclose(fp);
-      stbi_image_free(image_data);
-      return luaL_error(L, "写入文件失败");
+  {
+    long i = 0;
+    int pos = 0;
+    static const int channel_map[] = {0, 1, 2, 2, 1, 0, 2, 1, 0};
+    unsigned char *src = image_data;
+    for (int y = 0; y < img_height; y++) {
+      for (int x = 0; x < img_width; x++) {
+        unsigned char byte;
+        if (i >= actual_size) goto end_png2file_loop;
+        byte = src[channel_map[pos]] ^ 0x55;
+        if (fwrite(&byte, 1, 1, fp) != 1) {
+          fclose(fp);
+          stbi_image_free(image_data);
+          return luaL_error(L, "写入文件失败");
+        }
+        src += 3;
+        i++;
+        if (++pos == 9) pos = 0;
+      }
     }
+    end_png2file_loop:;
   }
   
   fclose(fp);
@@ -2812,28 +2805,21 @@ static int str_data2png (lua_State *L) {
   
   memset(image_data, 0, img_width * img_height * 3);
   
-  for (size_t i = 0; i < data_size; i++) {
-    int x = i % img_width;
-    int y = i / img_width;
-    int img_idx = (y * img_width + x) * 3;
-    unsigned char byte = ((const unsigned char *)data)[i];
-    // 按照用户要求的三通道存储模式
-    int channel_index;
-    int pos = i % 9;
-    if (pos == 0) channel_index = 0;    // 第1字节 → 通道1
-    else if (pos == 1) channel_index = 1;   // 第2字节 → 通道2
-    else if (pos == 2) channel_index = 2;   // 第3字节 → 通道3
-    else if (pos == 3) channel_index = 2;   // 第4字节 → 通道3
-    else if (pos == 4) channel_index = 1;   // 第5字节 → 通道2
-    else if (pos == 5) channel_index = 0;   // 第6字节 → 通道1
-    else if (pos == 6) channel_index = 2;   // 第7字节 → 通道3
-    else if (pos == 7) channel_index = 1;   // 第8字节 → 通道2
-    else channel_index = 0;   // 第9字节 → 通道1
-    image_data[img_idx + channel_index] = byte ^ 0x55;
-    // 其他通道填充0，确保图像数据正确
-    if (channel_index != 0) image_data[img_idx] = 0;
-    if (channel_index != 1) image_data[img_idx + 1] = 0;
-    if (channel_index != 2) image_data[img_idx + 2] = 0;
+  {
+    unsigned char *dst = image_data;
+    size_t i = 0;
+    int pos = 0;
+    static const int channel_map[] = {0, 1, 2, 2, 1, 0, 2, 1, 0};
+    for (int y = 0; y < img_height; y++) {
+      for (int x = 0; x < img_width; x++) {
+        if (i >= data_size) goto end_data_loop;
+        dst[channel_map[pos]] = ((const unsigned char *)data)[i] ^ 0x55;
+        dst += 3;
+        i++;
+        if (++pos == 9) pos = 0;
+      }
+    }
+    end_data_loop:;
   }
   
   PngWriteContext ctx = {0};
@@ -2891,23 +2877,21 @@ static int str_png2data (lua_State *L) {
     return luaL_error(L, "内存分配失败");
   }
   
-  for (long i = 0; i < actual_size; i++) {
-    int x = i % img_width;
-    int y = i / img_width;
-    int img_idx = (y * img_width + x) * 3;
-    // 按照用户要求的三通道存储模式
-    int channel_index;
-    int pos = i % 9;
-    if (pos == 0) channel_index = 0;    // 第1字节 → 通道1
-    else if (pos == 1) channel_index = 1;   // 第2字节 → 通道2
-    else if (pos == 2) channel_index = 2;   // 第3字节 → 通道3
-    else if (pos == 3) channel_index = 2;   // 第4字节 → 通道3
-    else if (pos == 4) channel_index = 1;   // 第5字节 → 通道2
-    else if (pos == 5) channel_index = 0;   // 第6字节 → 通道1
-    else if (pos == 6) channel_index = 2;   // 第7字节 → 通道3
-    else if (pos == 7) channel_index = 1;   // 第8字节 → 通道2
-    else channel_index = 0;   // 第9字节 → 通道1
-    result_data[i] = image_data[img_idx + channel_index] ^ 0x55;
+  {
+    long i = 0;
+    int pos = 0;
+    static const int channel_map[] = {0, 1, 2, 2, 1, 0, 2, 1, 0};
+    unsigned char *src = image_data;
+    for (int y = 0; y < img_height; y++) {
+      for (int x = 0; x < img_width; x++) {
+        if (i >= actual_size) goto end_png2data_loop;
+        result_data[i] = src[channel_map[pos]] ^ 0x55;
+        src += 3;
+        i++;
+        if (++pos == 9) pos = 0;
+      }
+    }
+    end_png2data_loop:;
   }
   
   stbi_image_free(image_data);
@@ -2942,23 +2926,21 @@ static int str_data (lua_State *L) {
     return luaL_error(L, "内存分配失败");
   }
   
-  for (long i = 0; i < expected_size; i++) {
-    int x = i % img_width;
-    int y = i / img_width;
-    int img_idx = (y * img_width + x) * 3;
-    // 按照用户要求的三通道存储模式
-    int channel_index;
-    int pos = i % 9;
-    if (pos == 0) channel_index = 0;    // 第1字节 → 通道1
-    else if (pos == 1) channel_index = 1;   // 第2字节 → 通道2
-    else if (pos == 2) channel_index = 2;   // 第3字节 → 通道3
-    else if (pos == 3) channel_index = 2;   // 第4字节 → 通道3
-    else if (pos == 4) channel_index = 1;   // 第5字节 → 通道2
-    else if (pos == 5) channel_index = 0;   // 第6字节 → 通道1
-    else if (pos == 6) channel_index = 2;   // 第7字节 → 通道3
-    else if (pos == 7) channel_index = 1;   // 第8字节 → 通道2
-    else channel_index = 0;   // 第9字节 → 通道1
-    result_data[i] = image_data[img_idx + channel_index] ^ 0x55;
+  {
+    long i = 0;
+    int pos = 0;
+    static const int channel_map[] = {0, 1, 2, 2, 1, 0, 2, 1, 0};
+    unsigned char *src = image_data;
+    for (int y = 0; y < img_height; y++) {
+      for (int x = 0; x < img_width; x++) {
+        if (i >= expected_size) goto end_data_loop;
+        result_data[i] = src[channel_map[pos]] ^ 0x55;
+        src += 3;
+        i++;
+        if (++pos == 9) pos = 0;
+      }
+    }
+    end_data_loop:;
   }
   
   stbi_image_free(image_data);
@@ -2973,6 +2955,100 @@ static int str_data (lua_State *L) {
   return lua_pcall(L, 0, LUA_MULTRET, 0);
 }
 
+/* Nirithy== Shell Generator */
+static const char* nirithy_b64 = "9876543210zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA-_";
+
+static char* nirithy_encode(const unsigned char* input, size_t len) {
+  size_t out_len = 4 * ((len + 2) / 3);
+  char* out = (char*)malloc(out_len + 1);
+  size_t i = 0, j = 0;
+  if (!out) return NULL;
+  while (i < len) {
+    uint32_t octet_a = i < len ? input[i++] : 0;
+    uint32_t octet_b = i < len ? input[i++] : 0;
+    uint32_t octet_c = i < len ? input[i++] : 0;
+    uint32_t triple = (octet_a << 16) + (octet_b << 8) + octet_c;
+    out[j++] = nirithy_b64[(triple >> 18) & 0x3F];
+    out[j++] = nirithy_b64[(triple >> 12) & 0x3F];
+    out[j++] = nirithy_b64[(triple >> 6) & 0x3F];
+    out[j++] = nirithy_b64[triple & 0x3F];
+  }
+  if (len % 3 == 1) {
+    out[out_len - 1] = '=';
+    out[out_len - 2] = '=';
+  } else if (len % 3 == 2) {
+    out[out_len - 1] = '=';
+  }
+  out[out_len] = '\0';
+  return out;
+}
+
+static void nirithy_derive_key(uint64_t timestamp, uint8_t *key) {
+  uint8_t input[32];
+  uint8_t digest[SHA256_DIGEST_SIZE];
+
+  /* Input: timestamp (8 bytes) + "NirithySalt" (11 bytes) */
+  memcpy(input, &timestamp, 8);
+  memcpy(input + 8, "NirithySalt", 11);
+
+  SHA256(input, 19, digest);
+  memcpy(key, digest, 16); /* Use first 16 bytes as AES-128 key */
+}
+
+static int str_envelop(lua_State *L) {
+  size_t l;
+  const char *s = luaL_checklstring(L, 1, &l);
+  uint64_t timestamp = (uint64_t)time(NULL);
+
+  /* Structure: Timestamp (8) + IV (16) + EncryptedData (l) */
+  size_t payload_len = 8 + 16 + l;
+  unsigned char *payload = (unsigned char *)malloc(payload_len);
+  if (!payload) return luaL_error(L, "memory allocation failed");
+
+  /* 1. Timestamp */
+  memcpy(payload, &timestamp, 8);
+
+  /* 2. IV (Random) */
+  {
+    /* Generate random IV using local LCG seeded by luaL_makeseed to avoid
+       time collision and global state modification */
+    unsigned int seed = luaL_makeseed(L);
+    int i;
+    for (i = 0; i < 16; i++) {
+      seed = seed * 1103515245 + 12345;
+      payload[8 + i] = (unsigned char)((seed >> 16) & 0xFF);
+    }
+  }
+
+  /* 3. Encrypt Payload */
+  {
+    uint8_t key[16];
+    struct AES_ctx ctx;
+    nirithy_derive_key(timestamp, key);
+
+    /* Copy data to payload buffer */
+    memcpy(payload + 8 + 16, s, l);
+
+    /* Encrypt the data part using AES-128-CTR */
+    AES_init_ctx_iv(&ctx, key, payload + 8);
+    AES_CTR_xcrypt_buffer(&ctx, payload + 8 + 16, (uint32_t)l);
+  }
+
+  char *encoded = nirithy_encode(payload, payload_len);
+  free(payload);
+
+  if (!encoded) return luaL_error(L, "encoding failed");
+
+  luaL_Buffer b;
+  luaL_buffinit(L, &b);
+  luaL_addstring(&b, "Nirithy==");
+  luaL_addstring(&b, encoded);
+  free(encoded);
+
+  luaL_pushresult(&b);
+  return 1;
+}
+
 static const luaL_Reg strlib[] = {
   {"aes_decrypt", str_aes_decrypt},
   {"aes_encrypt", str_aes_encrypt},
@@ -2984,6 +3060,7 @@ static const luaL_Reg strlib[] = {
   {"data2png", str_data2png},
   {"dump", str_dump},
   {"endswith", str_endswith},
+  {"envelop", str_envelop},
   {"escape", str_escape},
   {"file", str_file},
   {"file2png", str_file2png},
