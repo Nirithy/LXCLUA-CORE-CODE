@@ -70,7 +70,7 @@ public final class AutoCompletePackages {
              // 新增（上面缺少的）
              "aes_decrypt", "aes_encrypt", "contains", "crc32", "endswith", "escape",
              "fromhex", "hex", "imageresize", "ltrim", "pack", "packsize", "rtrim",
-             "sha256", "split", "startswith", "trim", "unpack"
+             "sha256", "split", "startswith", "trim", "unpack","envelop"
             ));
 
             put("table", Arrays.asList(

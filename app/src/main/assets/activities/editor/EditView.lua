@@ -444,20 +444,16 @@ function _M.EditorLanguageAsync(code)
     end
 
     if not code then
-      if activity.getSharedData("edit_box_init") == true then
-        editor.setEditorLanguage(setupEditorLanguage())
+      -- 先立即设置编辑器语言（不阻塞高亮）
+      if activity.classMap2 then
+        editor.setEditorLanguage(setupEditorLanguage(activity.base, activity.classMap2))
        else
-        if activity.classMap2 then
-          editor.setEditorLanguage(setupEditorLanguage(activity.base, activity.classMap2))
-         else
-          local completeBasePath = activity.getExternalCacheDir().getPath() .. "/complete.base"
-          if FileUtil.isFile(completeBasePath) then
-            loadBaseMapsAsync(init_progress, startLibsScan)
-           else
-            editor.setEditorLanguage(setupEditorLanguage())
-          end
-        end
+        editor.setEditorLanguage(setupEditorLanguage())
       end
+
+      -- 然后在后台静默扫描，不弹对话框
+      startLibsScan()
+
       return _M
     end
 
@@ -496,47 +492,36 @@ function _M.EditorLanguageAsync(code)
     end
 
     local function startLibsScan()
-      if activity.getSharedData("analyse_the_data") then
-        editor.postInLifecycle(function()
-          ScanUtil.scanLibsDirectory(activity, luaproject, {
-            onStart = function()
-              init_progress.parent.Visibility = 0
-            end,
-            onProgress = function(message, progress)
-              init_progress.setProgressCompat(progress, true)
-              init_text.setText(message)
-            end,
-            onFinish = function()
-              init_progress.parent.Visibility = 8
+      -- 静默在后台扫描，不阻塞UI
+      editor.postInLifecycle(function()
+        ScanUtil.scanLibsDirectory(activity, luaproject, {
+          onStart = function() end,  -- 不显示进度
+          onProgress = function() end,  -- 静默
+          onFinish = function()
+            -- 扫描完成后更新补全数据
+            if activity.classMap2 then
               editor.setEditorLanguage(setupEditorLanguage(activity.base, activity.classMap2))
-            end,
-            onError = function(error)
-              init_progress.parent.Visibility = 8
-              if not error:find("found") then
-                MyToast(error)
-              end
             end
-          })
-        end)
-      end
+          end,
+          onError = function(error)
+            -- 只在真正出错时提示
+            if not error:find("found") then
+              MyToast(error)
+            end
+          end
+        })
+      end)
     end
 
-    if activity.getSharedData("edit_box_init") == true then
-      editor.setEditorLanguage(setupEditorLanguage())
-      startLibsScan()
+    -- 先立即设置编辑器语言（不阻塞高亮）
+    if activity.classMap2 then
+      editor.setEditorLanguage(setupEditorLanguage(activity.base, activity.classMap2))
      else
-      if activity.classMap2 then
-        editor.setEditorLanguage(setupEditorLanguage(activity.base, activity.classMap2))
-        startLibsScan()
-       else
-        local completeBasePath = activity.getExternalCacheDir().getPath() .. "/complete.base"
-        if FileUtil.isFile(completeBasePath) then
-          loadBaseMapsAsync(init_progress.parent, startLibsScan)
-         else
-          handleGenerateCompleteData(startLibsScan)
-        end
-      end
+      editor.setEditorLanguage(setupEditorLanguage())
     end
+
+    -- 然后在后台静默扫描，不弹对话框
+    startLibsScan()
 
     PackageUtil.load(activity)
     editor.getComponent(bindClass "io.github.rosemoe.sora.widget.component.EditorAutoCompletion")

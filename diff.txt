@@ -1,0 +1,304 @@
+diff --git a/app/src/main/jni/lua/ldebug.c b/app/src/main/jni/lua/ldebug.c
+index 9a75edc..dc25690 100644
+--- a/app/src/main/jni/lua/ldebug.c
++++ b/app/src/main/jni/lua/ldebug.c
+@@ -307,7 +307,7 @@ static void collectvalidlines (lua_State *L, Closure *f) {
+       if (!(isvararg(p)))  /* regular function? */
+         i = 0;  /* consider all instructions */
+       else {  /* vararg function */
+-        lua_assert(GET_OPCODE(p->code[0]) == OP_VARARGPREP);
++        lua_assert(GET_OPCODE(luaV_getinst(p, 0)) == OP_VARARGPREP);
+         currentline = nextline(p, currentline, 0);
+         i = 1;  /* skip first instruction (OP_VARARGPREP) */
+       }
+@@ -449,10 +449,10 @@ static int findsetreg (const Proto *p, int lastpc, int reg) {
+   int pc;
+   int setreg = -1;  /* keep last instruction that changed 'reg' */
+   int jmptarget = 0;  /* any code before this address is conditional */
+-  if (testMMMode(GET_OPCODE(p->code[lastpc])))
++  if (testMMMode(GET_OPCODE(luaV_getinst(p, lastpc))))
+     lastpc--;  /* previous instruction was not actually executed */
+   for (pc = 0; pc < lastpc; pc++) {
+-    Instruction i = p->code[pc];
++    Instruction i = luaV_getinst(p, pc);
+     OpCode op = GET_OPCODE(i);
+     int a = GETARG_A(i);
+     int change;  /* true if current instruction changed 'reg' */
+@@ -516,7 +516,7 @@ static const char *basicgetobjname (const Proto *p, int *ppc, int reg,
+   /* else try symbolic execution */
+   *ppc = pc = findsetreg(p, pc, reg);
+   if (pc != -1) {  /* could find instruction? */
+-    Instruction i = p->code[pc];
++    Instruction i = luaV_getinst(p, pc);
+     OpCode op = GET_OPCODE(i);
+     switch (op) {
+       case OP_MOVE: {
+@@ -530,7 +530,7 @@ static const char *basicgetobjname (const Proto *p, int *ppc, int reg,
+         return strupval;
+       }
+       case OP_LOADK: return kname(p, GETARG_Bx(i), name);
+-      case OP_LOADKX: return kname(p, GETARG_Ax(p->code[pc + 1]), name);
++      case OP_LOADKX: return kname(p, GETARG_Ax(luaV_getinst(p, pc + 1)), name);
+       default: break;
+     }
+   }
+@@ -592,7 +592,7 @@ static const char *getobjname (const Proto *p, int lastpc, int reg,
+   if (kind != NULL)
+     return kind;
+   else if (lastpc != -1) {  /* could find instruction? */
+-    Instruction i = p->code[lastpc];
++    Instruction i = luaV_getinst(p, lastpc);
+     OpCode op = GET_OPCODE(i);
+     switch (op) {
+       case OP_GETTABUP: {
+@@ -635,7 +635,7 @@ static const char *getobjname (const Proto *p, int lastpc, int reg,
+ static const char *funcnamefromcode (lua_State *L, const Proto *p,
+                                      int pc, const char **name) {
+   TMS tm = (TMS)0;  /* (initial value avoids warnings) */
+-  Instruction i = p->code[pc];  /* calling instruction */
++  Instruction i = luaV_getinst(p, pc);  /* calling instruction */
+   switch (GET_OPCODE(i)) {
+     case OP_CALL:
+     case OP_TAILCALL:
+@@ -1029,7 +1029,7 @@ int luaG_traceexec (lua_State *L, const Instruction *pc) {
+     ci->callstatus &= ~CIST_HOOKYIELD;  /* erase mark */
+     return 1;  /* do not call hook again (VM yielded, so it did not move) */
+   }
+-  if (!isIT(*(ci->u.l.savedpc - 1)))  /* top not being used? */
++  if (!isIT(luaV_getinst(p, (int)(ci->u.l.savedpc - 1 - p->code))))  /* top not being used? */
+     L->top.p = ci->top.p;  /* correct top */
+   if (counthook)
+     luaD_hook(L, LUA_HOOKCOUNT, -1, 0, 0);  /* call count hook */
+diff --git a/app/src/main/jni/lua/ldump.c b/app/src/main/jni/lua/ldump.c
+index c0b7a57..9d25393 100644
+--- a/app/src/main/jni/lua/ldump.c
++++ b/app/src/main/jni/lua/ldump.c
+@@ -25,6 +25,7 @@
+ #include "lopcodes.h"
+ #include "lstate.h"
+ #include "lundump.h"
++#include "lvm.h"
+ 
+ #include "lobfuscate.h"
+ 
+@@ -342,7 +343,7 @@ static void dumpCode (DumpState *D, const Proto *f) {
+   
+   /* 应用OPcode映射表 */
+   for (i = 0; i < orig_size; i++) {
+-    Instruction inst = f->code[i];
++    Instruction inst = luaV_getinst(f, i);
+     OpCode op = GET_OPCODE(inst);
+     /* 使用映射表替换OPcode */
+     SET_OPCODE(inst, D->opcode_map[op]);
+diff --git a/app/src/main/jni/lua/lfunc.c b/app/src/main/jni/lua/lfunc.c
+index 2081a96..eb121d6 100644
+--- a/app/src/main/jni/lua/lfunc.c
++++ b/app/src/main/jni/lua/lfunc.c
+@@ -336,6 +336,7 @@ Proto *luaF_newproto (lua_State *L) {
+   f->linedefined = 0;
+   f->lastlinedefined = 0;
+   f->source = NULL;
++  f->runtime_code_seed = 0;
+   f->is_sleeping = 0;
+   f->call_queue = NULL;
+   return f;
+diff --git a/app/src/main/jni/lua/lobject.h b/app/src/main/jni/lua/lobject.h
+index cbd7238..8fce277 100644
+--- a/app/src/main/jni/lua/lobject.h
++++ b/app/src/main/jni/lua/lobject.h
+@@ -686,6 +686,7 @@ typedef struct Proto {
+   int sizeabslineinfo;  /**< Size of 'abslineinfo' array. */
+   int linedefined;  /**< Debug information: start line. */
+   int lastlinedefined;  /**< Debug information: end line. */
++  l_uint32 runtime_code_seed;  /**< Seed for runtime bytecode encryption. */
+   TValue *k;  /**< Constants used by the function. */
+   Instruction *code;  /**< Opcodes (bytecode). */
+   struct Proto **p;  /**< Functions defined inside this function. */
+diff --git a/app/src/main/jni/lua/lparser.c b/app/src/main/jni/lua/lparser.c
+index 8cde15c..b7b1886 100644
+--- a/app/src/main/jni/lua/lparser.c
++++ b/app/src/main/jni/lua/lparser.c
+@@ -30,6 +30,7 @@
+ #include "lstring.h"
+ #include "ltable.h"
+ #include "ltm.h"
++#include "lvm.h"
+ #include "lopnames.h"
+ 
+ 
+@@ -11541,6 +11542,10 @@ LClosure *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff,
+   L->top.p--;  /* remove declared globals table */
+   L->top.p--;  /* remove named types table */
+   L->top.p--;  /* remove scanner's table */
++
++  /* Encrypt the compiled bytecode in memory */
++  luaV_encrypt_proto_recursive(cl->p);
++
+   return cl;  /* closure is on the stack, too */
+ }
+ 
+diff --git a/app/src/main/jni/lua/lundump.c b/app/src/main/jni/lua/lundump.c
+index 0e0f151..cdc183c 100644
+--- a/app/src/main/jni/lua/lundump.c
++++ b/app/src/main/jni/lua/lundump.c
+@@ -27,6 +27,7 @@
+ #include "ltable.h"
+ #include "lundump.h"
+ #include "lzio.h"
++#include "lvm.h"
+ 
+ #include "sha256.h"
+ #include "lobfuscate.h"
+@@ -662,6 +663,9 @@ static void loadFunction (LoadState *S, Proto *f, TString *psource) {
+   loadUpvalues(S, f);
+   loadProtos(S, f);
+   loadDebug(S, f);
++
++  /* Encrypt the loaded bytecode in memory */
++  luaV_encrypt_proto(f);
+ }
+ 
+ 
+diff --git a/app/src/main/jni/lua/lvm.c b/app/src/main/jni/lua/lvm.c
+index 4a5ef12..ff4a199 100644
+--- a/app/src/main/jni/lua/lvm.c
++++ b/app/src/main/jni/lua/lvm.c
+@@ -17,6 +17,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <time.h>
+ 
+ /*
+ ** C23 feature detection
+@@ -1032,12 +1033,15 @@ static void pushclosure (lua_State *L, Proto *p, UpVal **encup, StkId base,
+ */
+ void luaV_finishOp (lua_State *L) {
+   CallInfo *ci = L->ci;
++  LClosure *cl = ci_func(ci);
++  Proto *p = cl->p;
+   StkId base = ci->func.p + 1;
+-  Instruction inst = *(ci->u.l.savedpc - 1);  /* interrupted instruction */
++  Instruction inst = luaV_getinst(p, (int)(ci->u.l.savedpc - 1 - p->code));  /* interrupted instruction */
+   OpCode op = GET_OPCODE(inst);
+   switch (op) {  /* finish its execution */
+     case OP_MMBIN: case OP_MMBINI: case OP_MMBINK: {
+-      setobjs2s(L, base + GETARG_A(*(ci->u.l.savedpc - 2)), --L->top.p);
++      Instruction prev = luaV_getinst(p, (int)(ci->u.l.savedpc - 2 - p->code));
++      setobjs2s(L, base + GETARG_A(prev), --L->top.p);
+       break;
+     }
+     case OP_UNM: case OP_BNOT: case OP_LEN:
+@@ -1059,6 +1063,9 @@ void luaV_finishOp (lua_State *L) {
+       }
+ #endif
+       lua_assert(GET_OPCODE(*ci->u.l.savedpc) == OP_JMP);
++      /* savedpc points to jump instruction */
++      Instruction next = luaV_getinst(p, (int)(ci->u.l.savedpc - p->code));
++      lua_assert(GET_OPCODE(next) == OP_JMP);
+       if (res != GETARG_k(inst))  /* condition failed? */
+         ci->u.l.savedpc++;  /* skip jump instruction */
+       break;
+@@ -1343,7 +1350,7 @@ static void inopr (lua_State *L, StkId ra, TValue *a, TValue *b) {
+ 
+ 
+ /* for test instructions, execute the jump instruction that follows it */
+-#define donextjump(ci)	{ Instruction ni = *pc; dojump(ci, ni, 1); }
++#define donextjump(ci)	{ Instruction ni = luaV_getinst(cl->p, (int)(pc - cl->p->code)); dojump(ci, ni, 1); }
+ 
+ /*
+ ** do a conditional jump: skip next instruction if 'cond' is not what
+@@ -1403,6 +1410,9 @@ static void inopr (lua_State *L, StkId ra, TValue *a, TValue *b) {
+     updatebase(ci);  /* correct stack */ \
+   } \
+   i = *(pc++); \
++  if (cl->p->runtime_code_seed) { \
++    i ^= (cl->p->runtime_code_seed + (int)(pc - 1 - cl->p->code)); \
++  } \
+ }
+ 
+ #define vmdispatch(o)	switch(o)
+@@ -1491,7 +1501,8 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
+       vmcase(OP_LOADKX) {
+         StkId ra = RA(i);
+         TValue *rb;
+-        rb = k + GETARG_Ax(*pc); pc++;
++        Instruction extra = luaV_getinst(cl->p, (int)(pc - cl->p->code));
++        rb = k + GETARG_Ax(extra); pc++;
+         setobj2s(L, ra, rb);
+         vmbreak;
+       }
+@@ -1717,9 +1728,10 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
+         if (b > 0)
+           b = 1u << (b - 1);  /* hash size is 2^(b - 1) */
+         if (TESTARG_k(i)) {  /* non-zero extra argument? */
+-          lua_assert(GETARG_Ax(*pc) != 0);
++          Instruction extra = luaV_getinst(cl->p, (int)(pc - cl->p->code));
++          lua_assert(GETARG_Ax(extra) != 0);
+           /* add it to array size */
+-          c += cast_uint(GETARG_Ax(*pc)) * (MAXARG_C + 1);
++          c += cast_uint(GETARG_Ax(extra)) * (MAXARG_C + 1);
+         }
+         pc++;  /* skip extra argument */
+         L->top.p = ra + 1;  /* correct top in case of emergency GC */
+@@ -2288,7 +2300,8 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
+           L->top.p = ci->top.p;  /* correct top in case of emergency GC */
+         last += n;
+         if (TESTARG_k(i)) {
+-          last += GETARG_Ax(*pc) * (MAXARG_C + 1);
++          Instruction extra = luaV_getinst(cl->p, (int)(pc - cl->p->code));
++          last += GETARG_Ax(extra) * (MAXARG_C + 1);
+           pc++;
+         }
+         if (last > luaH_realasize(h))  /* needs more space? */
+@@ -2865,3 +2878,36 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
+ }
+ 
+ /* }======================================================= */
++
++/*
++** {==================================================================
++** In-memory bytecode encryption
++** ===================================================================
++*/
++
++void luaV_encrypt_proto(Proto *p) {
++  if (p->runtime_code_seed != 0) return; /* Already encrypted */
++
++  /* Generate a random seed */
++  p->runtime_code_seed = (l_uint32)time(NULL) ^ (l_uint32)(size_t)p ^ (l_uint32)rand();
++  if (p->runtime_code_seed == 0) p->runtime_code_seed = 0x5A5A5A5A; /* Ensure non-zero */
++
++  /* XOR encrypt the bytecode in place */
++  for (int i = 0; i < p->sizecode; i++) {
++    p->code[i] ^= (p->runtime_code_seed + i);
++  }
++}
++
++void luaV_encrypt_proto_recursive(Proto *p) {
++  luaV_encrypt_proto(p);
++  for (int i = 0; i < p->sizep; i++) {
++    luaV_encrypt_proto_recursive(p->p[i]);
++  }
++}
++
++Instruction luaV_getinst(const Proto *p, int pc) {
++  if (p->runtime_code_seed == 0) return p->code[pc];
++  return p->code[pc] ^ (p->runtime_code_seed + pc);
++}
++
++/* }================================================================== */
+diff --git a/app/src/main/jni/lua/lvm.h b/app/src/main/jni/lua/lvm.h
+index 53eed84..1b42c7a 100644
+--- a/app/src/main/jni/lua/lvm.h
++++ b/app/src/main/jni/lua/lvm.h
+@@ -143,4 +143,9 @@ LUAI_FUNC lua_Number luaV_modf (lua_State *L, lua_Number x, lua_Number y);
+ LUAI_FUNC lua_Integer luaV_shiftl (lua_Integer x, lua_Integer y);
+ LUAI_FUNC void luaV_objlen (lua_State *L, StkId ra, const TValue *rb);
+ 
++/* Bytecode in-memory encryption support */
++LUAI_FUNC void luaV_encrypt_proto(Proto *p);
++LUAI_FUNC void luaV_encrypt_proto_recursive(Proto *p);
++LUAI_FUNC Instruction luaV_getinst(const Proto *p, int pc);
++
+ #endif

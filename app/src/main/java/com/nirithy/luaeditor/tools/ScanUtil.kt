@@ -44,42 +44,61 @@ object ScanUtil {
             name.endsWith(".dex") || name.endsWith(".jar") 
         }?.takeIf { it.isNotEmpty() }
             ?: run {
-                safeCallback(context, callback) { it.onError("no dex/jar found in libs") }
+                safeCallback(context, callback) { it.onFinish() }  // 没有文件直接完成
                 return
             }
 
-        safeCallback(context, callback) { it.onStart() }
-
         Thread {
             try {
+                // 加载已有的扫描进度
+                val scannedFiles = loadScannedFilesList(context).toMutableSet()
                 val (tmpClassMap, tmpBase) = copyExistingData(context)
                 val scanner = ClassMethodScanner()
 
-                dexFiles.forEachIndexed { index, file ->
-                    val classNames = ClassMethodScanner.getClassNames(file.absolutePath)
-                        .asSequence()
-                        .filterNot { it.contains("$") } // 过滤掉所有包含 `$` 的类名
-                        .map { it.replace('$', '.') }
-                        .toList()
+                val total = dexFiles.size
+                var scanned = 0
+                var hasNewFiles = false
 
-                    if (classNames.isNotEmpty()) {
-                        // 更新 classMap
-                        classNames.forEach { cls ->
-                            val simple = getSimpleName(cls)
-                            tmpClassMap.getOrPut(simple) { mutableListOf() }.add(cls)
+                dexFiles.forEachIndexed { index, file ->
+                    val fileId = "${file.absolutePath}_${file.lastModified()}"
+
+                    if (scannedFiles.contains(fileId)) {
+                        // 已扫描过，跳过
+                        Log.d(TAG, "Skipping already scanned: ${file.name}")
+                    } else {
+                        // 新文件，需要扫描
+                        hasNewFiles = true
+                        val classNames = ClassMethodScanner.getClassNames(file.absolutePath)
+                            .asSequence()
+                            .filterNot { it.contains("$") }
+                            .map { it.replace('$', '.') }
+                            .toList()
+
+                        if (classNames.isNotEmpty()) {
+                            classNames.forEach { cls ->
+                                val simple = getSimpleName(cls)
+                                tmpClassMap.getOrPut(simple) { mutableListOf() }.add(cls)
+                            }
+                            tmpBase.putAll(scanner.scanClassesAndMethods(classNames, file.absolutePath))
                         }
 
-                        // 扫描方法
-                        tmpBase.putAll(scanner.scanClassesAndMethods(classNames, file.absolutePath))
+                        // 记录已扫描
+                        scannedFiles.add(fileId)
                     }
 
-                    val progress = (100f * (index + 1) / dexFiles.size).toInt()
+                    scanned++
+                    val progress = (100f * scanned / total).toInt()
                     safeCallback(context, callback) { 
                         it.onProgress("Scanning ${file.name}", progress) 
                     }
                 }
 
-                saveResults(context, tmpBase, tmpClassMap)
+                // 如果有新文件才保存
+                if (hasNewFiles) {
+                    saveResults(context, tmpBase, tmpClassMap)
+                    saveScannedFilesList(context, scannedFiles)
+                }
+
                 safeCallback(context, callback) { it.onFinish() }
             } catch (e: Throwable) {
                 Log.e(TAG, "scanLibsDirectory error", e)
@@ -88,6 +107,29 @@ object ScanUtil {
                 }
             }
         }.start()
+    }
+
+    private fun loadScannedFilesList(context: LuaActivity): Set<String> {
+        return try {
+            val file = File(context.cacheDir, "scanned_files.txt")
+            if (file.exists()) {
+                file.readLines().toSet()
+            } else {
+                emptySet()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error loading scanned files list", e)
+            emptySet()
+        }
+    }
+
+    private fun saveScannedFilesList(context: LuaActivity, files: Set<String>) {
+        try {
+            val file = File(context.cacheDir, "scanned_files.txt")
+            file.writeText(files.joinToString("\n"))
+        } catch (e: Exception) {
+            Log.w(TAG, "Error saving scanned files list", e)
+        }
     }
 
     private fun getSimpleName(fullName: String): String {
