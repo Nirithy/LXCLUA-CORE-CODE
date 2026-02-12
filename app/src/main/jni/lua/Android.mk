@@ -59,6 +59,7 @@ LOCAL_SRC_FILES := \
 	lzio.c \
 	lthread.c \
 	lthreadlib.c \
+	lproclib.c\
 	lptrlib.c \
 	lsmgrlib.c \
 	llibc.c \

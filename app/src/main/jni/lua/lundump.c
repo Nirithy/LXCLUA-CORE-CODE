@@ -650,7 +650,7 @@ static void loadFunction (LoadState *S, Proto *f, TString *psource) {
   f->numparams = loadByte(S);
   f->is_vararg = loadByte(S);
   f->maxstacksize = loadByte(S);
-  f->difierline_mode = loadByte(S);  /* 新增：读取自定义标志 */
+  f->difierline_mode = loadInt(S);  /* 新增：读取自定义标志 */
 
   f->difierline_pad = loadInt(S); /* Padding */
 
@@ -683,7 +683,7 @@ static void loadFunction (LoadState *S, Proto *f, TString *psource) {
     int map_size = loadInt(S);
     int *reverse_map = luaM_newvector(S->L, map_size, int);
     for (int i = 0; i < map_size; i++) {
-      reverse_map[i] = loadInt(S);
+      reverse_map[i] = loadInt(S) - 1;
     }
     
     /* 注册VM代码到全局表 */
