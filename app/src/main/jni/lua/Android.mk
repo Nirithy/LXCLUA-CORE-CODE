@@ -44,6 +44,7 @@ LOCAL_SRC_FILES := \
 	lstring.c \
 	lstrlib.c \
 	ltable.c \
+	libhttp.c\
 	ltablib.c \
 	ltm.c \
 	lua.c \
