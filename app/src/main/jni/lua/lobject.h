@@ -476,7 +476,12 @@ typedef struct Struct {
   int *gc_offsets;      /**< GC offsets array. */
   int n_gc_offsets;     /**< Number of GC offsets. */
   size_t data_size;     /**< Size of the data block. */
-  lu_byte data[1];      /**< Data block. */
+  struct GCObject *parent; /**< Parent object (if this is a view). */
+  lu_byte *data;        /**< Pointer to data. */
+  union {
+    LUAI_MAXALIGN;
+    lu_byte d[1];
+  } inline_data;        /**< Inline data block. */
 } Struct;
 
 #define gco2struct(o)	check_exp((o)->tt == LUA_VSTRUCT, &((cast_u(o) - offsetof(Struct, next))->struct_))
@@ -805,6 +810,30 @@ typedef union Closure {
 #define getproto(o)	(clLvalue(o)->p)
 
 /* }======================================================= */
+
+
+/*
+** {=======================================================
+** Concepts
+** ========================================================
+*/
+
+#define LUA_VCONCEPT	makevariant(LUA_TCONCEPT, 0)
+
+#define ttisconcept(o)		checktag((o), ctb(LUA_VCONCEPT))
+
+#define clConceptValue(o)	check_exp(ttisconcept(o), gco2concept(val_(o).gc))
+
+#define setclConceptValue(L,obj,x) \
+  { TValue *io = (obj); Concept *x_ = (x); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_VCONCEPT)); \
+    checkliveness(L,io); }
+
+typedef struct Concept {
+  ClosureHeader;
+  struct Proto *p; /**< function prototype */
+  UpVal *upvals[1];  /**< list of upvalues */
+} Concept;
 
 
 /*
