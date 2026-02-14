@@ -83,7 +83,7 @@ local function getError()
 end
 
 -- 设置错误检查
-local function setupErrorChecking()
+local function setupErrorTesting()
   _M.ticker.Period = 200
   _M.ticker.start()
   _M.ticker.onTick = function()
@@ -113,9 +113,7 @@ function _M.init()
 
   initTab()
 
-  if is_sora then
-    setupErrorChecking()
-  end
+  setupErrorTesting()
 
   EditView
   .Search_Init()
@@ -132,11 +130,7 @@ end
 function _M.save(path)
   local path = PathUtil.this_file
 
-  if is_sora then
-    fileTracker.putFile(db, ProjectName, path, tonumber(editor.getCursor().getLeftLine()), tonumber(editor.getCursor().getLeftColumn()))
-   else
-    fileTracker.putFile(db, ProjectName, path, tonumber(editor.getSelectionEnd()), 0)
-  end
+  fileTracker.putFile(db, ProjectName, path, tonumber(editor.getCursor().getLeftLine()), tonumber(editor.getCursor().getLeftColumn()))
 
   -- 确保不重复添加已存在的路径
   local relativePath = path:match(luaproject .. "/(.+)")
@@ -176,15 +170,11 @@ function _M.load(path)
       local line = file_info.lines
       local col = file_info.columns
 
-      if is_sora then
-        editor.postInLifecycle(function()
-          pcall(function()
-            editor.setSelection(line, col, true)
-          end)
+      editor.postInLifecycle(function()
+        pcall(function()
+          editor.setSelection(line, col, true)
         end)
-       else
-        editor.setSelection(line)
-      end
+      end)
     end
   end
   fileTracker.putInProject(db, ProjectName, "lastOpenedProjectPath", path)

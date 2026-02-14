@@ -1302,7 +1302,18 @@ public class LuaTextTokenizer {
                     "export",
                     "defer",
                     "struct",
-                    "concept"
+                    "concept",
+                    "namespace",
+                    "using",
+                    "requires",
+                    "bool",
+                    "char",
+                    "double",
+                    "float",
+                    "int",
+                    "long",
+                    "void",
+                    "asm"
                 };
         Tokens[] sTokens = {
             Tokens.ASYNC,
@@ -1397,7 +1408,17 @@ public class LuaTextTokenizer {
             Tokens.DEFER,
             Tokens.STRUCT,
             Tokens.CONCEPT,
-            Tokens.NAMESPACE
+            Tokens.NAMESPACE,
+            Tokens.USING,
+            Tokens.REQUIRES,
+            Tokens.BOOL,
+            Tokens.CHAR,
+            Tokens.DOUBLE,
+            Tokens.FLOAT,
+            Tokens.TYPE_INT,
+            Tokens.LONG,
+            Tokens.VOID,
+            Tokens.OPERATOR_KW
         };
         keywords = new TrieTree<>();
         for (int i = 0; i < sKeywords.length; i++) {

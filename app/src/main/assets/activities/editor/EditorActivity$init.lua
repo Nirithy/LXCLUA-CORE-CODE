@@ -207,8 +207,7 @@ function _M.setSymbol()
       {title = "<", content = "<"},
       {title = ">", content = ">"},
       {title = "~", content = "~"},
-      {title = "'", content = "'"},
-      {title = "LSP", content = "lsp"}
+      {title = "'", content = "'"}
     }
     SharedPrefUtil.set("symbol", DEFAULT_SYMBOLS)
     symbol = DEFAULT_SYMBOLS
@@ -235,62 +234,6 @@ function _M.Bar()
       end
     end
 
-    -- LSP 点击处理函数
-    local function lspClickHandler()
-      return function()
-        local LspManager = luajava.bindClass "com.difierline.lua.lsp.LspManager"
-        local lspManager = LspManager.getInstance()
-        
-        local isConnected = lspManager.isConnected()
-        
-        if isConnected then
-          -- 已连接，显示断开选项
-          MaterialBlurDialogBuilder(activity)
-          .setTitle("LSP 状态")
-          .setMessage("当前已连接到 LSP 服务器")
-          .setPositiveButton("断开连接", function()
-            lspManager.disconnect()
-            MyToast("LSP 已断开")
-          end)
-          .setNegativeButton("取消", nil)
-          .show()
-        else
-          -- 未连接，显示连接选项
-          local connect_dialog = MaterialBlurDialogBuilder(activity)
-          .setTitle("连接")
-          .setMessage("请输入地址和端口")
-          .setView(loadlayout("layouts.dialog_lsp_connect"))
-          .setPositiveButton("连接", nil)
-          .setNegativeButton("取消", nil)
-          .create()
-          
-          -- 设置默认值
-          lsp_host.setText("localhost")
-          lsp_port.setText("8080")
-          
-          connect_dialog.show()
-          
-          -- 绑定确认按钮事件
-          local positiveButton = connect_dialog.getButton(connect_dialog.BUTTON_POSITIVE)
-          positiveButton.onClick = function()
-            local host = lsp_host.text
-            local port = tonumber(lsp_port.text)
-            
-            if not port or port <= 0 or port > 65535 then
-              lsp_port.setError("请输入有效的端口号")
-              return
-            end
-            
-            -- 连接 LSP
-            local connected = EditView.initLsp(luaproject, PathUtil.this_file, port, host)
-            MyToast(connected and "LSP 连接成功" or "LSP 连接失败")
-            
-            connect_dialog.dismiss()
-          end
-        end
-      end
-    end
-
     local barAdapter = LuaRecyclerAdapter(symbol, "layouts.bar_item", {
       onBindViewHolder = function(viewHolder, pos, views, data)
         views.symbol.setText(data.title)
@@ -298,13 +241,7 @@ function _M.Bar()
         views.symbol.setBackgroundDrawable(getRipple())
 
         -- 绑定点击处理函数
-        if data.content == "lsp" then
-          -- LSP 按钮使用特殊处理
-          views.symbol.onClick = lspClickHandler()
-        else
-          -- 普通符号使用默认处理
-          views.symbol.onClick = symbolClickHandler(data)
-        end
+        views.symbol.onClick = symbolClickHandler(data)
       end
     })
 

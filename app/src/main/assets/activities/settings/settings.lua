@@ -1,7 +1,6 @@
 local bindClass = luajava.bindClass
 local Build = bindClass "android.os.Build"
 local packageInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0)
-local is_sora = activity.getSharedData("is_sora")
 
 return
 {
@@ -100,20 +99,12 @@ return
     key = "automatic_backup",
     summary = res.string.automatic_backup_tip,
   },
-  {--Sora
-    SettingsLayUtil.ITEM_SWITCH_NOSUMMARY;
-    icon = "ic_circle_edit_outline",
-    title = res.string.sora_editor,
-    key = "is_sora",
-  },
   {--完整参数类型
     SettingsLayUtil.ITEM_SWITCH,
     icon = "ic_eye_outline",
     title = res.string.full_parameter_type,
     key = "full_parameter_type",
     summary = res.string.full_parameter_type_summary,
-    enabled = is_sora or false,
-    switchEnabled = is_sora or false,
   },
   {--分析导入类
     SettingsLayUtil.ITEM_SWITCH,
@@ -121,8 +112,6 @@ return
     title = res.string.analyse_the_data,
     key = "analyse_the_data",
     summary = res.string.analyse_the_data_summary,
-    enabled = is_sora or false,
-    switchEnabled = is_sora or false,
   },
   {--区分大小写
     SettingsLayUtil.ITEM_SWITCH,
@@ -136,8 +125,6 @@ return
     icon = "ic_circle_edit_outline",
     title = res.string.edit_config,
     key = "edit_config",
-    enabled = is_sora or false,
-    switchEnabled = is_sora or false,
     newPage = true,
   },
   {--缩放范围
@@ -145,8 +132,6 @@ return
     icon = "ic_cursor_pointer",
     title = res.string.zoom_range,
     key = "zoom_range",
-    enabled = is_sora or false,
-    switchEnabled = is_sora or false,
   },
   {--字体
     SettingsLayUtil.ITEM,
@@ -168,8 +153,6 @@ return
     icon = "ic_symbol",
     title = res.string.autofill,
     key = "autofill",
-    enabled = is_sora or false,
-    switchEnabled = is_sora or false,
   },
   {--自定义符号
     SettingsLayUtil.ITEM_NOSUMMARY;

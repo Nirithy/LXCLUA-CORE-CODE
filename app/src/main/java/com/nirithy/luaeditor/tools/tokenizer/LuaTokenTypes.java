@@ -178,5 +178,18 @@ public enum LuaTokenTypes {
     CONCEPT,        // concept (模板约束)
 
     // 命名空间关键字
-    NAMESPACE       // namespace (命名空间)
+    NAMESPACE,      // namespace (命名空间)
+
+    // 模块/依赖关键字
+    USING,          // using (使用命名空间/类型)
+    REQUIRES,       // requires (依赖声明)
+
+    // 类型关键字
+    BOOL,           // bool (布尔类型)
+    CHAR,           // char (字符类型)
+    DOUBLE,         // double (双精度浮点)
+    FLOAT,          // float (单精度浮点)
+    TYPE_INT,       // int (整数类型)
+    LONG,           // long (长整数)
+    VOID            // void (无返回值)
 }

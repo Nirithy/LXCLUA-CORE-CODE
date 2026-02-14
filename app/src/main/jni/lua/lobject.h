@@ -53,6 +53,7 @@ typedef union Value {
   void *p;         /**< light userdata */
   void *ptr;       /**< raw pointer type */
   struct Struct *struct_; /**< struct values */
+  struct Namespace *ns;   /**< namespace objects */
   lua_CFunction f; /**< light C functions */
   lua_Integer i;   /**< integer numbers */
   lua_Number n;    /**< float numbers */
@@ -347,13 +348,19 @@ typedef struct GCObject {
 /* Variant tags for numbers */
 #define LUA_VNUMINT	makevariant(LUA_TNUMBER, 0)  /* integer numbers */
 #define LUA_VNUMFLT	makevariant(LUA_TNUMBER, 1)  /* float numbers */
+#define LUA_VNUMBIG	99 /* big numbers: 3 | (2<<4) | 64 */
+#define LUA_VNUMFLTBIG	(makevariant(LUA_TNUMBER, 3) | BIT_ISCOLLECTABLE)
 
 #define ttisnumber(o)		checktype((o), LUA_TNUMBER)
 #define ttisfloat(o)		checktag((o), LUA_VNUMFLT)
 #define ttisinteger(o)		checktag((o), LUA_VNUMINT)
+#define ttisbigint(o)		checktag((o), LUA_VNUMBIG)
+#define ttisbigfloat(o)		checktag((o), LUA_VNUMFLTBIG)
 
 #define nvalue(o)	check_exp(ttisnumber(o), \
-	(ttisinteger(o) ? cast_num(ivalue(o)) : fltvalue(o)))
+	(ttisinteger(o) ? cast_num(ivalue(o)) : \
+	(ttisbigint(o) ? luaB_bigtonumber(o) : \
+	(ttisbigfloat(o) ? luaB_bigflttonumber(o) : fltvalue(o)))))
 #define fltvalue(o)	check_exp(ttisfloat(o), val_(o).n)
 #define ivalue(o)	check_exp(ttisinteger(o), val_(o).i)
 
@@ -371,6 +378,59 @@ typedef struct GCObject {
 
 #define chgivalue(obj,x) \
   { TValue *io=(obj); lua_assert(ttisinteger(io)); val_(io).i=(x); }
+
+#define setbigvalue(L,obj,x) \
+  { TValue *io = (obj); TBigInt *x_ = (x); \
+    val_(io).gc = obj2gco(x_); settt_(io, LUA_VNUMBIG); \
+    checkliveness(L,io); }
+
+#define bigvalue(o)	check_exp(ttisbigint(o), gco2big(val_(o).gc))
+
+/* }======================================================= */
+
+
+/*
+** {=======================================================
+** Big Integers
+** ========================================================
+*/
+
+typedef struct TBigInt {
+  CommonHeader;
+  unsigned int len;  /* number of limbs */
+  int sign;          /* 1 or -1 */
+  l_uint32 buff[1];  /* limbs (little endian) */
+} TBigInt;
+
+#define gco2big(o)	check_exp((o)->tt == LUA_VNUMBIG, (TBigInt*)(o))
+
+LUAI_FUNC lua_Number luaB_bigtonumber (const TValue *obj);
+
+
+/*
+** {=======================================================
+** Big Float
+** ========================================================
+*/
+
+typedef struct TBigFloat {
+  CommonHeader;
+  lua_Integer exp;   /* exponent (base 10) */
+  unsigned int len;  /* number of limbs */
+  int sign;          /* 1 or -1 */
+  l_uint32 buff[1];  /* limbs (little endian) */
+} TBigFloat;
+
+#define gco2bigflt(o)	check_exp((o)->tt == LUA_VNUMFLTBIG, (TBigFloat*)(o))
+
+LUAI_FUNC lua_Number luaB_bigflttonumber (const TValue *obj);
+
+#define bigfltvalue(o)	check_exp(ttisbigfloat(o), gco2bigflt(val_(o).gc))
+
+#define setbigfltvalue(L,obj,x) \
+  { TValue *io = (obj); TBigFloat *x_ = (x); \
+    val_(io).gc = obj2gco(x_); settt_(io, LUA_VNUMFLTBIG); \
+    checkliveness(L,io); }
 
 /* }======================================================= */
 
@@ -704,6 +764,8 @@ typedef struct Proto {
   int is_sleeping; /**< sleep status */
   CallQueue *call_queue; /**< call queue for sleep/wake */
   struct VMCodeTable *vm_code_table;  /**< VM protection code table pointer. */
+  void *jit_code; /**< JIT compiled machine code. */
+  size_t jit_size; /**< Size of JIT machine code. */
 } Proto;
 
 /* }======================================================= */
@@ -838,6 +900,32 @@ typedef struct Concept {
 
 /*
 ** {=======================================================
+** Namespaces
+** ========================================================
+*/
+
+#define LUA_VNAMESPACE	makevariant(LUA_TNAMESPACE, 0)
+
+#define ttisnamespace(o)		checktag((o), ctb(LUA_VNAMESPACE))
+
+#define nsvalue(o)	check_exp(ttisnamespace(o), gco2ns(val_(o).gc))
+
+#define setnsvalue(L,obj,x) \
+  { TValue *io = (obj); Namespace *x_ = (x); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_VNAMESPACE)); \
+    checkliveness(L,io); }
+
+typedef struct Namespace {
+  CommonHeader;
+  struct Table *data;
+  TString *name;
+  struct GCObject *gclist;
+  struct Namespace *using_next;
+} Namespace;
+
+
+/*
+** {=======================================================
 ** Tables
 ** ========================================================
 */
@@ -916,6 +1004,7 @@ typedef struct Table {
   GCObject *gclist; /**< garbage collector list */
   lu_byte type;    /**< Custom type flag. */
   l_rwlock_t lock; /**< Lock for thread safety. */
+  struct Namespace *using_next; /**< Used namespaces */
 } Table;
 
 

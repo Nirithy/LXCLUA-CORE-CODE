@@ -1,12 +1,6 @@
 require "env"
 setStatus()
 
-is_sora = activity.getSharedData("is_sora")
-if not is_sora then
-  activity.finish()
-  return
-end
-
 -- 绑定Java类
 local bindClass = luajava.bindClass
 local LinearLayoutManager = bindClass "androidx.recyclerview.widget.LinearLayoutManager"

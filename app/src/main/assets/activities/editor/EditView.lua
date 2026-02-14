@@ -20,8 +20,6 @@ local Utils = require "utils.Utils"
 local IconDrawable = require "utils.IconDrawable"
 local LuaLanguage = bindClass "com.nirithy.luaeditor.lualanguage.LuaLanguage"
 
-is_sora = activity.getSharedData("is_sora") or false
-
 local function getActionMode(view)
   return ActionMode.Callback{
     onCreateActionMode = function(mode, menu)
@@ -138,25 +136,23 @@ local function javaClassAnalyse(selectedText)
 end
 
 function _M.getView()
-  return is_sora and CodeEditor or LuaEditor
+  return CodeEditor
 end
 
 function _M.Search_Init()
-  if is_sora then
-    _M.searchState = {
-      searcher = editor.getSearcher(),
-      options = nil,
-      active = false,
-      caseSensitive = true,
-      useRegex = false,
-      searchType = 1
-    }
-  end
+  _M.searchState = {
+    searcher = editor.getSearcher(),
+    options = nil,
+    active = false,
+    caseSensitive = true,
+    useRegex = false,
+    searchType = 1
+  }
   return _M
 end
 
 function _M.gotoNextMatch()
-  if is_sora and _M.searchState.active and _M.searchState.searcher then
+  if _M.searchState.active and _M.searchState.searcher then
     pcall(function()
       _M.searchState.searcher.gotoNext()
       table.insert(search_histry, search.text)
@@ -167,7 +163,7 @@ function _M.gotoNextMatch()
 end
 
 function _M.gotoPrevMatch()
-  if is_sora and _M.searchState.active and _M.searchState.searcher then
+  if  _M.searchState.active and _M.searchState.searcher then
     pcall(function()
       _M.searchState.searcher.gotoPrevious()
       table.insert(search_histry, search.text)
@@ -178,7 +174,7 @@ function _M.gotoPrevMatch()
 end
 
 function _M.replaceCurrentMatch(replacement)
-  if is_sora and _M.searchState.active and _M.searchState.searcher then
+  if _M.searchState.active and _M.searchState.searcher then
     pcall(function()
       _M.searchState.searcher.replaceCurrentMatch(replacement)
     end)
@@ -187,7 +183,7 @@ function _M.replaceCurrentMatch(replacement)
 end
 
 function _M.replaceAll(replacement)
-  if is_sora and _M.searchState.active and _M.searchState.searcher then
+  if _M.searchState.active and _M.searchState.searcher then
     pcall(function()
       _M.searchState.searcher.replaceAll(replacement)
     end)
@@ -196,7 +192,7 @@ function _M.replaceAll(replacement)
 end
 
 function _M.clearSearch()
-  if is_sora and _M.searchState.searcher then
+  if _M.searchState.searcher then
     _M.searchState.searcher.stopSearch()
   end
   _M.searchState.active = false
@@ -207,7 +203,7 @@ function _M.clearSearch()
 end
 
 function _M.refreshSearch()
-  if is_sora and _M.searchState.active and _M.searchState.searcher then
+  if _M.searchState.active and _M.searchState.searcher then
     local searchText = tostring(search.getText())
     if #searchText > 0 then
       -- 更新搜索选项
@@ -224,7 +220,7 @@ function _M.refreshSearch()
 end
 
 function _M.search()
-  if is_sora then
+  if true then
     substitution.Visibility = 8
     substitution.setText("")
     local searchText = editor.getSelectedText() or ""
@@ -274,7 +270,7 @@ function _M.search()
 end
 
 function _M.format(callback)
-  if is_sora then
+  if true then
     if editor.isTextSelected() then
       local selectedRange = editor.getCursorRange()
       editor.formatCodeAsync(selectedRange.getStart(), selectedRange.getEnd())
@@ -288,7 +284,7 @@ function _M.format(callback)
 end
 
 function _M.TextSelectListener()
-  if is_sora then
+  if true then
     editor.addOnTextSelectStateChangeListener(function(isSelecting)
       if isSelecting then
         local selectedText = editor.getSelectedText()
@@ -345,7 +341,7 @@ function _M.TextSelectListener()
       local newColorStr = "0x" .. string.sub(string.format("%X", selectedColor), -8)
 
       -- 获取编辑器当前选中的文本范围
-      if is_sora then -- Sora编辑器处理
+      if true then -- Sora编辑器处理
         local cursor = editor.getCursor()
         local startLine = cursor.getLeftLine()
         local startCol = cursor.getLeftColumn()
@@ -370,7 +366,7 @@ function _M.TextSelectListener()
 end
 
 function _M.TextActionWindowListener()
-  if is_sora then
+  if true then
     editor.setTextActionWindowListener(luajava.createProxy("io.github.rosemoe.sora.widget.CodeEditor$TextActionWindowListener", {
       onTextActionWindowClick = function(id)
         switch id
@@ -407,7 +403,7 @@ end
 
 function _M.EditorLanguageAsync(code)
 
-  if is_sora then
+  if true then
     local function setupEditorLanguage(base, classMap2)
       LuaLanguage().releaseMemory()
       local lang
@@ -491,7 +487,7 @@ function _M.EditorLanguageAsync(code)
 end
 
 function _M.EditorScheme()
-  if is_sora then
+  if true then
 
     -- 根据用户主题设置设置颜色方案
     local themeSetting = activity.getSharedData("theme_light_dark") or 1
@@ -560,7 +556,7 @@ function _M.EditorScheme()
 end
 
 function _M.EditorProperties()
-  if is_sora then
+  if true then
 
     local minValue = tonumber(activity.getSharedData("value_min")) or 20
     local maxValue = tonumber(activity.getSharedData("value_max")) or 80
@@ -596,7 +592,7 @@ function _M.EditorFont()
       return Typeface.createFromFile(fontPath)
     end)
     if success and font then
-      if is_sora then
+      if true then
         editor.setTypefaceText(font)
         editor.setTypefaceLineNumber(font)
        else
@@ -623,40 +619,10 @@ function _M.EditorFont()
 end
 
 function _M.release()
-  if is_sora then
+  if true then
     editor.release()
     LuaLanguage().releaseMemory()
   end
-end
-
-function _M.initLsp(projectDir, filePath, port, host)
-  if is_sora then
-    local LspManager = luajava.bindClass "com.difierline.lua.lsp.LspManager"
-    local lspManager = LspManager.getInstance()
-    lspManager.init(activity, projectDir, filePath, port, host)
-    lspManager.setupEditor(editor)
-    local connected = lspManager.connect()
-    return connected
-  end
-  return false
-end
-
-function _M.disconnectLsp()
-  if is_sora then
-    local LspManager = luajava.bindClass "com.difierline.lua.lsp.LspManager"
-    local lspManager = LspManager.getInstance()
-    lspManager.disconnect()
-  end
-  return _M
-end
-
-function _M.isLspConnected()
-  if is_sora then
-    local LspManager = luajava.bindClass "com.difierline.lua.lsp.LspManager"
-    local lspManager = LspManager.getInstance()
-    return lspManager.isConnected()
-  end
-  return false
 end
 
 return _M

@@ -129,11 +129,11 @@ function _M.uri2path(uri)
   end
 end
 
-function _M.modifyItemOffsets(outRect, view, parent, adapter, int)
+function _M.modifyItemOffsets(outRect, view, parent, adapter, intvalue)
   -- 获取当前item的位置
   local position = parent.getChildAdapterPosition(view)
   -- 设置每个方向的间距
-  local spacing = dp2px(int) -- 定义总间距
+  local spacing = dp2px(intvalue) -- 定义总间距
   local halfSpacing = spacing / 2 -- 计算间距的一半，用于更灵活的间距设置
   -- 排他算法: 先统一在修改
   outRect.top = halfSpacing
@@ -146,12 +146,12 @@ function _M.modifyItemOffsets(outRect, view, parent, adapter, int)
   end
 end
 
-function _M.modifyItemOffsets2(outRect, view, parent, adapter, int)
+function _M.modifyItemOffsets2(outRect, view, parent, adapter, intvalue)
   -- 获取当前item的位置
   local position = parent.getChildAdapterPosition(view)
 
   -- 定义总间距
-  local spacing = dp2px(int)
+  local spacing = dp2px(intvalue)
 
   -- 只对最后一项设置 bottom
   if position == (adapter.getItemCount() - 1) then

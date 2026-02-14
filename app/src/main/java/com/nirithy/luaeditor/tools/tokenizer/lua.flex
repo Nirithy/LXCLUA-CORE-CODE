@@ -259,6 +259,15 @@ Number = {DecNumber} | {HexNumber} | {BinNumber}
   "struct"                  { return STRUCT; }
   "concept"                 { return CONCEPT; }
   "namespace"               { return NAMESPACE; }
+  "using"                  { return USING; }
+  "requires"               { return REQUIRES; }
+  "bool"                   { return BOOL; }
+  "char"                   { return CHAR; }
+  "double"                 { return DOUBLE; }
+  "float"                  { return FLOAT; }
+  "int"                    { return TYPE_INT; }
+  "long"                   { return LONG; }
+  "void"                   { return VOID; }
 
   /* region/endregion 注释 */
   "--region"[^\r\n]*        { return REGION; }

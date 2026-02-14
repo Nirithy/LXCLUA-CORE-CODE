@@ -274,7 +274,7 @@ function onCreateOptionsMenu(menu)
       editor.setWordWrap(value)
     end)
   end)
-  if is_sora then
+  if true then
     addCheckItem(menu4, res.string.readable_mode,
     function() return false end,
     function(value)

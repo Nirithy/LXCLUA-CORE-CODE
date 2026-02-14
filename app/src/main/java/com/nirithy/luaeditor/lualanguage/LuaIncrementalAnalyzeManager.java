@@ -909,6 +909,15 @@ public class LuaIncrementalAnalyzeManager
                 case STRUCT:
                 case CONCEPT:
                 case NAMESPACE:
+                case USING:
+                case REQUIRES:
+                case BOOL:
+                case CHAR:
+                case DOUBLE:
+                case FLOAT:
+                case TYPE_INT:
+                case LONG:
+                case VOID:
                     classNamePrevious = false;
                     span =
                             SpanFactory.obtain(

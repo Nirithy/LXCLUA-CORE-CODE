@@ -158,8 +158,24 @@ public enum Tokens {
     // 概念/约束关键字
     CONCEPT,        // concept (模板约束)
 
+    // 管道运算符
+    PIPE,           // |> 管道运算符
+    SAFE_PIPE,     // |>? 安全管道
+    REV_PIPE,       // <| 反向管道
+
     // 命名空间关键字
     NAMESPACE,      // namespace (命名空间)
+    USING,          // using (使用命名空间/类型)
+    REQUIRES,       // requires (依赖声明)
+    
+    // 类型关键字
+    BOOL,           // bool (布尔类型)
+    CHAR,           // char (字符类型)
+    DOUBLE,         // double (双精度浮点)
+    FLOAT,          // float (单精度浮点)
+    TYPE_INT,       // int (整数类型)
+    LONG,           // long (长整数)
+    VOID,           // void (无返回值)
 
     ARROW_LEFT_LONG,      // <--
     ARROW_RIGHT_LONG,     // -->
