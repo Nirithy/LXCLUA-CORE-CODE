@@ -67,7 +67,6 @@ LOCAL_SRC_FILES := \
 	llibc.c \
 	lvmpro.c\
 	logtable.c \
-	ljit.c\
 	json_parser.c \
 	lstruct.c \
 	sha256.c \

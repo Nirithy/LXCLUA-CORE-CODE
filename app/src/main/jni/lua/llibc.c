@@ -1685,3 +1685,2649 @@ static long my_strtol(const char *nptr, char **endptr, int base) {
   
   /* 设置endptr */
   if (endptr != NULL)
+    if (endptr != NULL) {
+    *endptr = (char *)s;
+  }
+  
+  return result * sign;
+}
+
+/* 字符串转无符号长整数（支持不同进制） */
+static unsigned long my_strtoul(const char *nptr, char **endptr, int base) {
+  const char *s = skip_whitespace(nptr);
+  int sign = 1;
+  unsigned long result = 0;
+  int digit;
+  
+  /* 处理符号 */
+  if (*s == '-') {
+    sign = -1;
+    s++;
+  } else if (*s == '+') {
+    s++;
+  }
+  
+  /* 处理进制前缀 */
+  if (base == 0) {
+    if (*s == '0') {
+      if (my_tolower(*(s + 1)) == 'x') {
+        base = 16;
+        s += 2;
+      } else {
+        base = 8;
+        s++;
+      }
+    } else {
+      base = 10;
+    }
+  } else if (base == 16) {
+    if (*s == '0' && my_tolower(*(s + 1)) == 'x') {
+      s += 2;
+    }
+  }
+  
+  /* 转换数字 */
+  while (*s != '\0') {
+    if (*s >= '0' && *s <= '9') {
+      digit = *s - '0';
+    } else if (*s >= 'a' && *s <= 'z') {
+      digit = *s - 'a' + 10;
+    } else if (*s >= 'A' && *s <= 'Z') {
+      digit = *s - 'A' + 10;
+    } else {
+      break;
+    }
+    
+    /* 检查数字是否在进制范围内 */
+    if (digit >= base) {
+      break;
+    }
+    
+    /* 检查溢出 */
+    if (result > (ULONG_MAX - digit) / base) {
+      /* 溢出 */
+      result = ULONG_MAX;
+      break;
+    }
+    
+    result = result * base + digit;
+    s++;
+  }
+  
+  /* 设置endptr */
+  if (endptr != NULL) {
+    *endptr = (char *)s;
+  }
+  
+  if (sign == -1) {
+    /* 处理负数 */
+    return -result;
+  }
+  
+  return result;
+}
+
+/* 字符串转双精度浮点数（支持科学计数法） */
+static double my_strtod(const char *nptr, char **endptr) {
+  const char *s = skip_whitespace(nptr);
+  int sign = 1;
+  double result = 0.0;
+  double fraction = 0.0;
+  int exponent = 0;
+  int frac_digits = 0;
+  
+  /* 处理符号 */
+  if (*s == '-') {
+    sign = -1;
+    s++;
+  } else if (*s == '+') {
+    s++;
+  }
+  
+  /* 处理整数部分 */
+  while (*s >= '0' && *s <= '9') {
+    result = result * 10.0 + (*s - '0');
+    s++;
+  }
+  
+  /* 处理小数部分 */
+  if (*s == '.') {
+    s++;
+    while (*s >= '0' && *s <= '9') {
+      fraction = fraction * 10.0 + (*s - '0');
+      frac_digits++;
+      s++;
+    }
+    /* 添加小数部分到结果 */
+    for (int i = 0; i < frac_digits; i++) {
+      fraction /= 10.0;
+    }
+    result += fraction;
+  }
+  
+  /* 处理指数部分 */
+  if (*s == 'e' || *s == 'E') {
+    s++;
+    int exp_sign = 1;
+    
+    /* 处理指数符号 */
+    if (*s == '-') {
+      exp_sign = -1;
+      s++;
+    } else if (*s == '+') {
+      s++;
+    }
+    
+    /* 处理指数值 */
+    while (*s >= '0' && *s <= '9') {
+      exponent = exponent * 10 + (*s - '0');
+      s++;
+    }
+    
+    exponent *= exp_sign;
+    
+    /* 应用指数 */
+    while (exponent > 0) {
+      result *= 10.0;
+      exponent--;
+    }
+    while (exponent < 0) {
+      result /= 10.0;
+      exponent++;
+    }
+  }
+  
+  /* 设置endptr */
+  if (endptr != NULL) {
+    *endptr = (char *)s;
+  }
+  
+  return result * sign;
+}
+
+/*
+** 动态内存分配函数
+*/
+
+/* 内存分配 */
+static void *my_malloc(size_t size) {
+  if (size == 0) {
+    return NULL;
+  }
+  
+  /* 初始化堆 */
+  init_heap();
+  
+  /* 计算实际需要的大小（包括块头部） */
+  size_t total_size = align_size(size) + sizeof(memory_block);
+  
+  /* 查找合适的空闲块 */
+  memory_block *block = find_free_block(total_size);
+  
+  /* 如果没有找到，扩展堆 */
+  if (block == NULL) {
+    block = (memory_block *)expand_heap(total_size);
+    if (block == NULL) {
+      return NULL;
+    }
+  }
+  
+  /* 标记为已使用 */
+  block->free = 0;
+  
+  /* 分割块（如果需要） */
+  split_block(block, total_size);
+  
+  /* 返回用户可用内存地址 */
+  return (void *)(block + 1);
+}
+
+/* 分配并清零内存 */
+static void *my_calloc(size_t nmemb, size_t size) {
+  size_t total_size = nmemb * size;
+  void *ptr = my_malloc(total_size);
+  if (ptr != NULL) {
+    /* 清零内存 */
+    my_memset(ptr, 0, total_size);
+  }
+  return ptr;
+}
+
+/* 重新分配内存 */
+static void *my_realloc(void *ptr, size_t size) {
+  if (ptr == NULL) {
+    /* 如果ptr为NULL，等同于malloc */
+    return my_malloc(size);
+  }
+  
+  if (size == 0) {
+    /* 如果size为0，等同于free */
+    my_free(ptr);
+    return NULL;
+  }
+  
+  /* 获取原块信息 */
+  memory_block *block = (memory_block *)ptr - 1;
+  size_t old_size = block->size - sizeof(memory_block);
+  
+  if (size <= old_size) {
+    /* 新大小小于等于原大小，直接返回 */
+    return ptr;
+  }
+  
+  /* 分配新内存 */
+  void *new_ptr = my_malloc(size);
+  if (new_ptr != NULL) {
+    /* 复制数据 */
+    my_memcpy(new_ptr, ptr, old_size);
+    /* 释放旧内存 */
+    my_free(ptr);
+  }
+  
+  return new_ptr;
+}
+
+/* 释放内存 */
+static void my_free(void *ptr) {
+  if (ptr == NULL) {
+    return;
+  }
+  
+  /* 获取块信息 */
+  memory_block *block = (memory_block *)ptr - 1;
+  
+  /* 标记为空闲 */
+  block->free = 1;
+  
+  /* 合并相邻的空闲块 */
+  merge_blocks();
+}
+
+/*
+** 字符串长度
+*/
+static size_t my_strlen(const char *s) {
+  const char *p = s;
+  while (*p != '\0') {
+    p++;
+  }
+  return (size_t)(p - s);
+}
+
+/*
+** 字符串拷贝
+*/
+static char *my_strcpy(char *dst, const char *src) {
+  char *p = dst;
+  while ((*p++ = *src++) != '\0') {
+    /* 空循环 */
+  }
+  return dst;
+}
+
+/*
+** 字符串n拷贝
+*/
+static char *my_strncpy(char *dst, const char *src, size_t n) {
+  char *p = dst;
+  while (n > 0 && (*p++ = *src++) != '\0') {
+    n--;
+  }
+  while (n > 0) {
+    *p++ = '\0';
+    n--;
+  }
+  return dst;
+}
+
+/*
+** 字符串比较
+*/
+static int my_strcmp(const char *s1, const char *s2) {
+  while (*s1 == *s2) {
+    if (*s1 == '\0') {
+      return 0;
+    }
+    s1++;
+    s2++;
+  }
+  return (unsigned char)*s1 - (unsigned char)*s2;
+}
+
+/*
+** 字符串n比较
+*/
+static int my_strncmp(const char *s1, const char *s2, size_t n) {
+  while (n > 0 && *s1 == *s2) {
+    if (*s1 == '\0') {
+      return 0;
+    }
+    s1++;
+    s2++;
+    n--;
+  }
+  if (n == 0) {
+    return 0;
+  }
+  return (unsigned char)*s1 - (unsigned char)*s2;
+}
+
+/*
+** 查找字符首次出现位置
+*/
+static const char *my_strchr(const char *s, int c) {
+  while (*s != '\0') {
+    if (*s == (char)c) {
+      return s;
+    }
+    s++;
+  }
+  if (c == '\0') {
+    return s;
+  }
+  return NULL;
+}
+
+/*
+** 查找字符最后出现位置
+*/
+static const char *my_strrchr(const char *s, int c) {
+  const char *last = NULL;
+  while (*s != '\0') {
+    if (*s == (char)c) {
+      last = s;
+    }
+    s++;
+  }
+  if (c == '\0') {
+    return s;
+  }
+  return last;
+}
+
+/*
+** 查找子字符串
+*/
+static const char *my_strstr(const char *haystack, const char *needle) {
+  if (*needle == '\0') {
+    return haystack;
+  }
+  
+  const char *h = haystack;
+  while (*h != '\0') {
+    const char *h2 = h;
+    const char *n = needle;
+    while (*h2 == *n && *h2 != '\0' && *n != '\0') {
+      h2++;
+      n++;
+    }
+    if (*n == '\0') {
+      return h;
+    }
+    h++;
+  }
+  return NULL;
+}
+
+/*
+** 字符串分割（线程安全，使用用户提供的上下文）
+*/
+static char *my_strtok(char *str, const char *delim, char **saveptr) {
+  char *token;
+  
+  /* 检查参数 */
+  if (delim == NULL || saveptr == NULL) {
+    return NULL;
+  }
+  
+  if (str != NULL) {
+    *saveptr = str;
+  }
+  
+  /* 检查是否已经处理完字符串 */
+  if (*saveptr == NULL || **saveptr == '\0') {
+    *saveptr = NULL;
+    return NULL;
+  }
+  
+  /* 跳过开头的分隔符 */
+  while (**saveptr != '\0') {
+    int found = 0;
+    const char *d = delim;
+    while (*d != '\0') {
+      if (**saveptr == *d) {
+        found = 1;
+        break;
+      }
+      d++;
+    }
+    if (!found) {
+      break;
+    }
+    (*saveptr)++;
+  }
+  
+  /* 检查是否已经处理完字符串 */
+  if (**saveptr == '\0') {
+    *saveptr = NULL;
+    return NULL;
+  }
+  
+  token = *saveptr;
+  
+  /* 查找下一个分隔符 */
+  while (**saveptr != '\0') {
+    const char *d = delim;
+    while (*d != '\0') {
+      if (**saveptr == *d) {
+        **saveptr = '\0';
+        (*saveptr)++;
+        return token;
+      }
+      d++;
+    }
+    (*saveptr)++;
+  }
+  
+  /* 标记处理结束 */
+  *saveptr = NULL;
+  
+  return token;
+}
+
+/*
+** 转换为小写
+*/
+static int my_tolower(int c) {
+  if (c >= 'A' && c <= 'Z') {
+    return c + ('a' - 'A');
+  }
+  return c;
+}
+
+/*
+** 转换为大写
+*/
+static int my_toupper(int c) {
+  if (c >= 'a' && c <= 'z') {
+    return c - ('a' - 'A');
+  }
+  return c;
+}
+
+/*
+** 字符串转换为小写
+*/
+static char *my_strlwr(char *s) {
+  char *p = s;
+  while (*p != '\0') {
+    *p = (char)my_tolower((unsigned char)*p);
+    p++;
+  }
+  return s;
+}
+
+/*
+** 字符串转换为大写
+*/
+static char *my_strupr(char *s) {
+  char *p = s;
+  while (*p != '\0') {
+    *p = (char)my_toupper((unsigned char)*p);
+    p++;
+  }
+  return s;
+}
+
+/*
+** 查找字符串中第一个不在指定字符集内的字符位置
+*/
+static size_t my_strspn(const char *s, const char *accept) {
+  const char *p = s;
+  while (*p != '\0') {
+    const char *a = accept;
+    int found = 0;
+    while (*a != '\0') {
+      if (*p == *a) {
+        found = 1;
+        break;
+      }
+      a++;
+    }
+    if (!found) {
+      break;
+    }
+    p++;
+  }
+  return (size_t)(p - s);
+}
+
+/*
+** 查找字符串中第一个在指定字符集内的字符位置
+*/
+static size_t my_strcspn(const char *s, const char *reject) {
+  const char *p = s;
+  while (*p != '\0') {
+    const char *r = reject;
+    while (*r != '\0') {
+      if (*p == *r) {
+        return (size_t)(p - s);
+      }
+      r++;
+    }
+    p++;
+  }
+  return (size_t)(p - s);
+}
+
+/*
+** 查找字符串中第一个出现指定字符集中任一字符的位置
+*/
+static const char *my_strpbrk(const char *s, const char *accept) {
+  const char *p = s;
+  while (*p != '\0') {
+    const char *a = accept;
+    while (*a != '\0') {
+      if (*p == *a) {
+        return p;
+      }
+      a++;
+    }
+    p++;
+  }
+  return NULL;
+}
+
+/*
+** 字符串复制（动态分配内存）
+*/
+static char *my_strdup(const char *s) {
+  size_t len = my_strlen(s) + 1;
+  char *dup = (char *)malloc(len);
+  if (dup != NULL) {
+    my_strcpy(dup, s);
+  }
+  return dup;
+}
+
+/*
+** 字符串复制（动态分配内存，指定长度）
+*/
+static char *my_strndup(const char *s, size_t n) {
+  size_t len = my_strlen(s);
+  if (len > n) {
+    len = n;
+  }
+  char *dup = (char *)malloc(len + 1);
+  if (dup != NULL) {
+    my_strncpy(dup, s, len);
+    dup[len] = '\0';
+  }
+  return dup;
+}
+
+/*
+** 内存设置
+*/
+static void *my_memset(void *s, int c, size_t n) {
+  unsigned char *p = (unsigned char *)s;
+  while (n > 0) {
+    *p++ = (unsigned char)c;
+    n--;
+  }
+  return s;
+}
+
+/*
+** 内存拷贝
+*/
+static void *my_memcpy(void *dst, const void *src, size_t n) {
+  unsigned char *d = (unsigned char *)dst;
+  const unsigned char *s = (const unsigned char *)src;
+  while (n > 0) {
+    *d++ = *s++;
+    n--;
+  }
+  return dst;
+}
+
+/*
+** 内存移动
+*/
+static void *my_memmove(void *dst, const void *src, size_t n) {
+  unsigned char *d = (unsigned char *)dst;
+  const unsigned char *s = (const unsigned char *)src;
+  
+  if (d < s) {
+    /* 从前往后拷贝 */
+    while (n > 0) {
+      *d++ = *s++;
+      n--;
+    }
+  } else if (d > s) {
+    /* 从后往前拷贝 */
+    d += n;
+    s += n;
+    while (n > 0) {
+      *--d = *--s;
+      n--;
+    }
+  }
+  
+  return dst;
+}
+
+/*
+** 内存比较
+*/
+static int my_memcmp(const void *s1, const void *s2, size_t n) {
+  const unsigned char *p1 = (const unsigned char *)s1;
+  const unsigned char *p2 = (const unsigned char *)s2;
+  
+  while (n > 0 && *p1 == *p2) {
+    p1++;
+    p2++;
+    n--;
+  }
+  
+  if (n == 0) {
+    return 0;
+  }
+  
+  return *p1 - *p2;
+}
+
+/*
+** 自定义数学函数
+*/
+
+/*
+** 绝对值
+*/
+static int my_abs(int n) {
+  return (n < 0) ? -n : n;
+}
+
+/*
+** 双精度绝对值
+*/
+static double my_fabs(double x) {
+  return (x < 0.0) ? -x : x;
+}
+
+/*
+** 平方根（牛顿迭代法）
+*/
+static double my_sqrt(double x) {
+  if (x < 0.0) {
+    return 0.0; /* 简单处理负数情况 */
+  }
+  
+  double guess = x;
+  double epsilon = 1e-10;
+  
+  for (int i = 0; i < 100; i++) {
+    double new_guess = 0.5 * (guess + x / guess);
+    if (my_fabs(new_guess - guess) < epsilon) {
+      return new_guess;
+    }
+    guess = new_guess;
+  }
+  
+  return guess;
+}
+
+/*
+** 自然对数（泰勒级数展开，提高精度）
+*/
+static double my_log(double x) {
+  if (x <= 0.0) {
+    return 0.0; /* 简单处理负数情况 */
+  }
+  
+  double y = (x - 1.0) / (x + 1.0);
+  double y2 = y * y;
+  double term = y;
+  double result = y;
+  double sign = 1.0;
+  
+  /* 展开到20项，提高精度 */
+  for (int i = 3; i <= 41; i += 2) {
+    sign = -sign;
+    term *= y2;
+    result += term / i;
+  }
+  
+  return 2.0 * result;
+}
+
+/*
+** 指数函数（泰勒级数展开，提高精度）
+*/
+static double my_exp(double x) {
+  double result = 1.0;
+  double term = 1.0;
+  
+  /* 展开到20项，提高精度 */
+  for (int i = 1; i <= 20; i++) {
+    term *= x / i;
+    result += term;
+    /* 防止溢出 */
+    if (result > 1e300) {
+      break;
+    }
+  }
+  
+  return result;
+}
+
+/*
+** 幂运算（支持非整数指数）
+*/
+static double my_pow(double base, double exponent) {
+  /* 处理特殊情况 */
+  if (exponent == 0.0) {
+    return 1.0;
+  }
+  
+  if (exponent == 1.0) {
+    return base;
+  }
+  
+  if (base == 0.0) {
+    return 0.0;
+  }
+  
+  /* 使用对数和指数转换实现非整数指数 */
+  /* pow(a, b) = exp(b * log(a)) */
+  double log_base = my_log(base);
+  double exp_result = my_exp(exponent * log_base);
+  
+  return exp_result;
+}
+
+/*
+** 正弦函数（泰勒级数，前20项，提高精度）
+*/
+static double my_sin(double x) {
+  /* 将x归一化到[-π, π]范围 */
+  while (x > 3.141592653589793) x -= 6.283185307179586;
+  while (x < -3.141592653589793) x += 6.283185307179586;
+  
+  double result = x;
+  double term = x;
+  double x2 = x * x;
+  int sign = -1;
+  
+  /* 展开到20项，提高精度 */
+  for (int i = 3; i <= 41; i += 2) {
+    term *= x2 / ((i - 1) * i);
+    result += sign * term;
+    sign = -sign;
+  }
+  
+  return result;
+}
+
+/*
+** 余弦函数（泰勒级数，前20项，提高精度）
+*/
+static double my_cos(double x) {
+  /* 将x归一化到[-π, π]范围 */
+  while (x > 3.141592653589793) x -= 6.283185307179586;
+  while (x < -3.141592653589793) x += 6.283185307179586;
+  
+  double result = 1.0;
+  double term = 1.0;
+  double x2 = x * x;
+  int sign = -1;
+  
+  /* 展开到20项，提高精度 */
+  for (int i = 2; i <= 42; i += 2) {
+    term *= x2 / ((i - 1) * i);
+    result += sign * term;
+    sign = -sign;
+  }
+  
+  return result;
+}
+
+/*
+** 正切函数（sin/cos）
+*/
+static double my_tan(double x) {
+  return my_sin(x) / my_cos(x);
+}
+
+/*
+** 向下取整
+*/
+static double my_floor(double x) {
+  int i = (int)x;
+  if (x < 0.0 && (double)i != x) {
+    i--;
+  }
+  return (double)i;
+}
+
+/*
+** 向上取整
+*/
+static double my_ceil(double x) {
+  int i = (int)x;
+  if (x > 0.0 && (double)i != x) {
+    i++;
+  }
+  return (double)i;
+}
+
+/*
+** 四舍五入
+*/
+static double my_round(double x) {
+  return my_floor(x + 0.5);
+}
+
+/*
+** 查找内存中的字符
+*/
+static void *my_memchr(const void *s, int c, size_t n) {
+  const unsigned char *p = (const unsigned char *)s;
+  while (n > 0) {
+    if (*p == (unsigned char)c) {
+      return (void *)p;
+    }
+    p++;
+    n--;
+  }
+  return NULL;
+}
+
+/*
+** 简单的随机数生成器（线性同余法）
+*/
+static unsigned int my_rand_seed = 1;
+
+static int my_rand(void) {
+  my_rand_seed = my_rand_seed * 1103515245 + 12345;
+  return (unsigned int)(my_rand_seed / 65536) % 32768;
+}
+
+static void my_srand(unsigned int seed) {
+  my_rand_seed = seed;
+}
+
+/*
+** CRC32校验算法（查表法）
+*/
+static unsigned int crc32_table[256] = {
+  0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
+  0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
+  0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
+  0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9, 0xfa0f3d63, 0x8d080df5,
+  0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172, 0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b,
+  0x35b5a8fa, 0x42b2986c, 0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59,
+  0x26d930ac, 0x51de003a, 0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423, 0xcfba9599, 0xb8bda50f,
+  0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924, 0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d,
+  0x76dc4190, 0x01db7106, 0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f, 0x9fbfe4a5, 0xe8b8d433,
+  0x7807c9a2, 0x0f00f934, 0x9609a88e, 0xe10e9818, 0x7f6a0dbb, 0x086d3d2d, 0x91646c97, 0xe6635c01,
+  0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e, 0x6c0695ed, 0x1b01a57b, 0x8208f4c1, 0xf50fc457,
+  0x65b0d9c6, 0x12b7e950, 0x8bbeb8ea, 0xfcb9887c, 0x62dd1ddf, 0x15da2d49, 0x8cd37cf3, 0xfbd44c65,
+  0x4db26158, 0x3ab551ce, 0xa3bc0074, 0xd4bb30e2, 0x4adfa541, 0x3dd895d7, 0xa4d1c46d, 0xd3d6f4fb,
+  0x4369e96a, 0x346ed9fc, 0xad678846, 0xda60b8d0, 0x44042d73, 0x33031de5, 0xaa0a4c5f, 0xdd0d7cc9,
+  0x5005713c, 0x270241aa, 0xbe0b1010, 0xc90c2086, 0x5768b525, 0x206f85b3, 0xb966d409, 0xce61e49f,
+  0x5edef90e, 0x29d9c998, 0xb0d09822, 0xc7d7a8b4, 0x59b33d17, 0x2eb40d81, 0xb7bd5c3b, 0xc0ba6cad,
+  0xedb88320, 0x9abfb3b6, 0x03b6e20c, 0x74b1d29a, 0xead54739, 0x9dd277af, 0x04db2615, 0x73dc1683,
+  0xe3630b12, 0x94643b84, 0x0d6d6a3e, 0x7a6a5aa8, 0xe40ecf0b, 0x9309ff9d, 0x0a00ae27, 0x7d079eb1,
+  0xf00f9344, 0x8708a3d2, 0x1e01f268, 0x6906c2fe, 0xf762575d, 0x806567cb, 0x196c3671, 0x6e6b06e7,
+  0xfed41b76, 0x89d32be0, 0x10da7a5a, 0x67dd4acc, 0xf9b9df6f, 0x8ebeeff9, 0x17b7be43, 0x60b08ed5,
+  0xd6d6a3e8, 0xa1d1937e, 0x38d8c2c4, 0x4fdff252, 0xd1bb67f1, 0xa6bc5767, 0x3fb506dd, 0x48b2364b,
+  0xd80d2bda, 0xaf0a1b4c, 0x36034af6, 0x41047a60, 0xdf60efc3, 0xa867df55, 0x316e8eef, 0x4669be79,
+  0xcb61b38c, 0xbc66831a, 0x256fd2a0, 0x5268e236, 0xcc0c7795, 0xbb0b4703, 0x220216b9, 0x5505262f,
+  0xc5ba3bbe, 0xb2bd0b28, 0x2bb45a92, 0x5cb36a04, 0xc2d7ffa7, 0xb5d0cf31, 0x2cd99e8b, 0x5bdeae1d,
+  0x9b64c2b0, 0xec63f226, 0x756aa39c, 0x026d930a, 0x9c0906a9, 0xeb0e363f, 0x72076785, 0x05005713,
+  0x95bf4a82, 0xe2b87a14, 0x7bb12bae, 0x0cb61b38, 0x92d28e9b, 0xe5d5be0d, 0x7cdcefb7, 0x0bdbdf21,
+  0x86d3d2d4, 0xf1d4e242, 0x68ddb3f8, 0x1fda836e, 0x81be16cd, 0xf6b9265b, 0x6fb077e1, 0x18b74777,
+  0x88085ae6, 0xff0f6a70, 0x66063bca, 0x11010b5c, 0x8f659eff, 0xf862ae69, 0x616bffd3, 0x166ccf45,
+  0xa00ae278, 0xd70dd2ee, 0x4e048354, 0x3903b3c2, 0xa7672661, 0xd06016f7, 0x4969474d, 0x3e6e77db,
+  0xaed16a4a, 0xd9d65adc, 0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9,
+  0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf,
+  0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
+};
+
+static unsigned int my_crc32(const unsigned char *data, size_t len) {
+  unsigned int crc = 0xFFFFFFFF;
+  while (len--) {
+    crc = (crc >> 8) ^ crc32_table[(crc & 0xFF) ^ *data++];
+  }
+  return crc ^ 0xFFFFFFFF;
+}
+
+/*
+** 简单的哈希函数（djb2算法）
+*/
+static unsigned int my_hash(const char *str) {
+  unsigned int hash = 5381;
+  int c;
+  
+  while ((c = *str++) != 0) {
+    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+  }
+  
+  return hash;
+}
+
+/*
+** 位操作函数
+*/
+static int my_band(int a, int b) {
+  return a & b;
+}
+
+static int my_bor(int a, int b) {
+  return a | b;
+}
+
+static int my_bxor(int a, int b) {
+  return a ^ b;
+}
+
+static int my_bnot(int a) {
+  return ~a;
+}
+
+static int my_bleft(int a, int n) {
+  return a << n;
+}
+
+static int my_bright(int a, int n) {
+  return a >> n;
+}
+
+static int my_bswap(int a) {
+  return ((a << 24) & 0xFF000000) |
+         ((a <<  8) & 0x00FF0000) |
+         ((a >>  8) & 0x0000FF00) |
+         ((a >> 24) & 0x000000FF);
+}
+
+static int my_btest(int a, int n) {
+  return (a & (1 << n)) != 0;
+}
+
+static int my_bset(int a, int n) {
+  return a | (1 << n);
+}
+
+static int my_bclear(int a, int n) {
+  return a & ~(1 << n);
+}
+
+/*
+** 在内存中查找子内存块
+*/
+static void *my_memmem(const void *haystack, size_t haystack_len, const void *needle, size_t needle_len) {
+  if (needle_len == 0) {
+    return (void *)haystack;
+  }
+  
+  if (haystack_len < needle_len) {
+    return NULL;
+  }
+  
+  const unsigned char *h = (const unsigned char *)haystack;
+  const unsigned char *n = (const unsigned char *)needle;
+  
+  for (size_t i = 0; i <= haystack_len - needle_len; i++) {
+    size_t j = 0;
+    while (j < needle_len && h[i + j] == n[j]) {
+      j++;
+    }
+    if (j == needle_len) {
+      return (void *)(h + i);
+    }
+  }
+  
+  return NULL;
+}
+
+/*
+** 快速内存比较（使用汇编优化）
+*/
+static int my_memcmp_fast(const void *s1, const void *s2, size_t n) {
+  const unsigned char *p1 = (const unsigned char *)s1;
+  const unsigned char *p2 = (const unsigned char *)s2;
+  
+  /* 对齐处理 */
+  while (n > 0 && ((uintptr_t)p1 % sizeof(unsigned long) != 0 || (uintptr_t)p2 % sizeof(unsigned long) != 0)) {
+    if (*p1 != *p2) {
+      return *p1 - *p2;
+    }
+    p1++;
+    p2++;
+    n--;
+  }
+  
+  /* 按字比较 */
+  const unsigned long *lp1 = (const unsigned long *)p1;
+  const unsigned long *lp2 = (const unsigned long *)p2;
+  while (n >= sizeof(unsigned long)) {
+    if (*lp1 != *lp2) {
+      /* 字不同，比较字节 */
+      const unsigned char *cp1 = (const unsigned char *)lp1;
+      const unsigned char *cp2 = (const unsigned char *)lp2;
+      for (size_t i = 0; i < sizeof(unsigned long); i++) {
+        if (cp1[i] != cp2[i]) {
+          return cp1[i] - cp2[i];
+        }
+      }
+    }
+    lp1++;
+    lp2++;
+    n -= sizeof(unsigned long);
+  }
+  
+  /* 剩余字节比较 */
+  const unsigned char *cp1 = (const unsigned char *)lp1;
+  const unsigned char *cp2 = (const unsigned char *)lp2;
+  while (n > 0) {
+    if (*cp1 != *cp2) {
+      return *cp1 - *cp2;
+    }
+    cp1++;
+    cp2++;
+    n--;
+  }
+  
+  return 0;
+}
+
+/*
+** 快速内存复制（使用普通C实现）
+*/
+static void *my_memcpy_fast(void *dst, const void *src, size_t n) {
+  /* 使用普通C实现，直接调用已有的my_memcpy函数 */
+  return my_memcpy(dst, src, n);
+}
+
+
+/*
+** Dynamic memory allocation functions (Lua bindings)
+*/
+
+static int l_libc_malloc (lua_State *L) {
+  size_t size = luaL_checkinteger(L, 1);
+  void *ptr = my_malloc(size);
+  if (ptr == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushlightuserdata(L, ptr);
+  }
+  return 1;
+}
+
+static int l_libc_calloc (lua_State *L) {
+  size_t nmemb = luaL_checkinteger(L, 1);
+  size_t size = luaL_checkinteger(L, 2);
+  void *ptr = my_calloc(nmemb, size);
+  if (ptr == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushlightuserdata(L, ptr);
+  }
+  return 1;
+}
+
+static int l_libc_realloc (lua_State *L) {
+  void *ptr = lua_touserdata(L, 1);
+  size_t size = luaL_checkinteger(L, 2);
+  void *new_ptr = my_realloc(ptr, size);
+  if (new_ptr == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushlightuserdata(L, new_ptr);
+  }
+  return 1;
+}
+
+static int l_libc_free (lua_State *L) {
+  void *ptr = lua_touserdata(L, 1);
+  my_free(ptr);
+  return 0;
+}
+
+
+/*
+** String conversion functions (Lua bindings)
+*/
+
+static int l_libc_atoi (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  lua_pushinteger(L, my_atoi(s));
+  return 1;
+}
+
+static int l_libc_atol (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  lua_pushinteger(L, my_atol(s));
+  return 1;
+}
+
+static int l_libc_atof (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  lua_pushnumber(L, my_atof(s));
+  return 1;
+}
+
+static int l_libc_strtol (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  int base = luaL_optinteger(L, 2, 10);
+  char *endptr = NULL;
+  long result = my_strtol(s, &endptr, base);
+  lua_pushinteger(L, result);
+  lua_pushstring(L, endptr);
+  return 2;
+}
+
+static int l_libc_strtoul (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  int base = luaL_optinteger(L, 2, 10);
+  char *endptr = NULL;
+  unsigned long result = my_strtoul(s, &endptr, base);
+  lua_pushinteger(L, result);
+  lua_pushstring(L, endptr);
+  return 2;
+}
+
+static int l_libc_strtod (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  char *endptr = NULL;
+  double result = my_strtod(s, &endptr);
+  lua_pushnumber(L, result);
+  lua_pushstring(L, endptr);
+  return 2;
+}
+
+
+/*
+** Error handling functions (Lua bindings)
+*/
+
+static int l_libc_get_errno (lua_State *L) {
+  lua_pushinteger(L, *my_errno_ptr());
+  return 1;
+}
+
+static int l_libc_set_errno (lua_State *L) {
+  int err = luaL_checkinteger(L, 1);
+  my_set_errno(err);
+  return 0;
+}
+
+static int l_libc_perror (lua_State *L) {
+  const char *s = luaL_optstring(L, 1, "");
+  my_perror(s);
+  return 0;
+}
+
+static int l_libc_strerror (lua_State *L) {
+  int errnum = luaL_checkinteger(L, 1);
+  lua_pushstring(L, my_strerror(errnum));
+  return 1;
+}
+
+
+/*
+** Time functions (Lua bindings)
+*/
+
+static int l_libc_time (lua_State *L) {
+  time_t t;
+  time_t result = my_time(&t);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_gmtime (lua_State *L) {
+  time_t t = luaL_checkinteger(L, 1);
+  struct tm *tm_ptr = my_gmtime(&t);
+  
+  /* 创建Lua表存储时间结构 */
+  lua_newtable(L);
+  lua_pushinteger(L, tm_ptr->tm_sec);
+  lua_setfield(L, -2, "tm_sec");
+  lua_pushinteger(L, tm_ptr->tm_min);
+  lua_setfield(L, -2, "tm_min");
+  lua_pushinteger(L, tm_ptr->tm_hour);
+  lua_setfield(L, -2, "tm_hour");
+  lua_pushinteger(L, tm_ptr->tm_mday);
+  lua_setfield(L, -2, "tm_mday");
+  lua_pushinteger(L, tm_ptr->tm_mon);
+  lua_setfield(L, -2, "tm_mon");
+  lua_pushinteger(L, tm_ptr->tm_year);
+  lua_setfield(L, -2, "tm_year");
+  lua_pushinteger(L, tm_ptr->tm_wday);
+  lua_setfield(L, -2, "tm_wday");
+  lua_pushinteger(L, tm_ptr->tm_yday);
+  lua_setfield(L, -2, "tm_yday");
+  lua_pushinteger(L, tm_ptr->tm_isdst);
+  lua_setfield(L, -2, "tm_isdst");
+  
+  return 1;
+}
+
+static int l_libc_localtime (lua_State *L) {
+  time_t t = luaL_checkinteger(L, 1);
+  struct tm *tm_ptr = my_localtime(&t);
+  
+  /* 创建Lua表存储时间结构 */
+  lua_newtable(L);
+  lua_pushinteger(L, tm_ptr->tm_sec);
+  lua_setfield(L, -2, "tm_sec");
+  lua_pushinteger(L, tm_ptr->tm_min);
+  lua_setfield(L, -2, "tm_min");
+  lua_pushinteger(L, tm_ptr->tm_hour);
+  lua_setfield(L, -2, "tm_hour");
+  lua_pushinteger(L, tm_ptr->tm_mday);
+  lua_setfield(L, -2, "tm_mday");
+  lua_pushinteger(L, tm_ptr->tm_mon);
+  lua_setfield(L, -2, "tm_mon");
+  lua_pushinteger(L, tm_ptr->tm_year);
+  lua_setfield(L, -2, "tm_year");
+  lua_pushinteger(L, tm_ptr->tm_wday);
+  lua_setfield(L, -2, "tm_wday");
+  lua_pushinteger(L, tm_ptr->tm_yday);
+  lua_setfield(L, -2, "tm_yday");
+  lua_pushinteger(L, tm_ptr->tm_isdst);
+  lua_setfield(L, -2, "tm_isdst");
+  
+  return 1;
+}
+
+static int l_libc_mktime (lua_State *L) {
+  /* 从Lua表获取时间结构 */
+  struct tm tm_struct;
+  my_memset(&tm_struct, 0, sizeof(tm_struct));
+  
+  luaL_checktype(L, 1, LUA_TTABLE);
+  
+  lua_getfield(L, 1, "tm_sec");
+  tm_struct.tm_sec = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_min");
+  tm_struct.tm_min = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_hour");
+  tm_struct.tm_hour = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_mday");
+  tm_struct.tm_mday = luaL_optinteger(L, -1, 1);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_mon");
+  tm_struct.tm_mon = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_year");
+  tm_struct.tm_year = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_isdst");
+  tm_struct.tm_isdst = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  time_t result = my_mktime(&tm_struct);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_asctime (lua_State *L) {
+  /* 从Lua表获取时间结构 */
+  struct tm tm_struct;
+  my_memset(&tm_struct, 0, sizeof(tm_struct));
+  
+  luaL_checktype(L, 1, LUA_TTABLE);
+  
+  lua_getfield(L, 1, "tm_sec");
+  tm_struct.tm_sec = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_min");
+  tm_struct.tm_min = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_hour");
+  tm_struct.tm_hour = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_mday");
+  tm_struct.tm_mday = luaL_optinteger(L, -1, 1);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_mon");
+  tm_struct.tm_mon = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_year");
+  tm_struct.tm_year = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_wday");
+  tm_struct.tm_wday = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_yday");
+  tm_struct.tm_yday = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 1, "tm_isdst");
+  tm_struct.tm_isdst = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  char *result = my_asctime(&tm_struct);
+  lua_pushstring(L, result);
+  return 1;
+}
+
+static int l_libc_strftime (lua_State *L) {
+  const char *format = luaL_checkstring(L, 1);
+  
+  /* 从Lua表获取时间结构 */
+  struct tm tm_struct;
+  my_memset(&tm_struct, 0, sizeof(tm_struct));
+  
+  luaL_checktype(L, 2, LUA_TTABLE);
+  
+  lua_getfield(L, 2, "tm_sec");
+  tm_struct.tm_sec = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_min");
+  tm_struct.tm_min = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_hour");
+  tm_struct.tm_hour = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_mday");
+  tm_struct.tm_mday = luaL_optinteger(L, -1, 1);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_mon");
+  tm_struct.tm_mon = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_year");
+  tm_struct.tm_year = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_wday");
+  tm_struct.tm_wday = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_yday");
+  tm_struct.tm_yday = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  lua_getfield(L, 2, "tm_isdst");
+  tm_struct.tm_isdst = luaL_optinteger(L, -1, 0);
+  lua_pop(L, 1);
+  
+  /* 分配缓冲区 */
+  size_t maxsize = 256;
+  char *buf = (char *)my_malloc(maxsize);
+  if (buf == NULL) {
+    lua_pushnil(L);
+    return 1;
+  }
+  
+  size_t result = my_strftime(buf, maxsize, format, &tm_struct);
+  lua_pushstring(L, buf);
+  my_free(buf);
+  return 1;
+}
+
+
+/*
+** Input/Output functions (Lua bindings)
+*/
+
+static int l_libc_getchar (lua_State *L) {
+  int c = my_getchar();
+  if (c == EOF) {
+    lua_pushnil(L);
+  } else {
+    lua_pushinteger(L, c);
+  }
+  return 1;
+}
+
+static int l_libc_putchar (lua_State *L) {
+  int c = luaL_checkinteger(L, 1);
+  int result = my_putchar(c);
+  if (result == EOF) {
+    lua_pushnil(L);
+  } else {
+    lua_pushinteger(L, result);
+  }
+  return 1;
+}
+
+static int l_libc_printf (lua_State *L) {
+  const char *format = luaL_checkstring(L, 1);
+  /* 简化实现，直接将参数转换为字符串并拼接 */
+  /* 注意：这是一个简化实现，不支持完整的格式化功能 */
+  char buf[1024];
+  int len = my_sprintf(buf, format);
+  lua_pushinteger(L, len);
+  return 1;
+}
+
+static int l_libc_scanf (lua_State *L) {
+  const char *format = luaL_checkstring(L, 1);
+  /* 简化实现，返回0表示未读取任何内容 */
+  lua_pushinteger(L, 0);
+  return 1;
+}
+
+static int l_libc_sscanf (lua_State *L) {
+  const char *str = luaL_checkstring(L, 1);
+  const char *format = luaL_checkstring(L, 2);
+  /* 简化实现，返回0表示未读取任何内容 */
+  lua_pushinteger(L, 0);
+  return 1;
+}
+
+
+/*
+** File operation functions (Lua bindings)
+*/
+
+static int l_libc_fopen (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  const char *mode = luaL_checkstring(L, 2);
+  my_FILE *file = my_fopen(pathname, mode);
+  if (file == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushlightuserdata(L, file);
+  }
+  return 1;
+}
+
+static int l_libc_fclose (lua_State *L) {
+  my_FILE *file = (my_FILE *)lua_touserdata(L, 1);
+  int result = my_fclose(file);
+  if (result == EOF) {
+    lua_pushnil(L);
+  } else {
+    lua_pushinteger(L, result);
+  }
+  return 1;
+}
+
+static int l_libc_fread (lua_State *L) {
+  /* 简化实现，返回空字符串表示未读取任何内容 */
+  lua_pushstring(L, "");
+  return 1;
+}
+
+static int l_libc_fwrite (lua_State *L) {
+  const char *ptr = luaL_checkstring(L, 1);
+  size_t size = luaL_checkinteger(L, 2);
+  size_t nmemb = luaL_checkinteger(L, 3);
+  my_FILE *file = (my_FILE *)lua_touserdata(L, 4);
+  size_t result = my_fwrite(ptr, size, nmemb, file);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_fseek (lua_State *L) {
+  my_FILE *file = (my_FILE *)lua_touserdata(L, 1);
+  long offset = luaL_checkinteger(L, 2);
+  int whence = luaL_checkinteger(L, 3);
+  int result = my_fseek(file, offset, whence);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_ftell (lua_State *L) {
+  my_FILE *file = (my_FILE *)lua_touserdata(L, 1);
+  long result = my_ftell(file);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_rewind (lua_State *L) {
+  my_FILE *file = (my_FILE *)lua_touserdata(L, 1);
+  my_rewind(file);
+  return 0;
+}
+
+
+/*
+** Process control functions (Lua bindings)
+*/
+
+static int l_libc_fork (lua_State *L) {
+  pid_t pid = my_fork();
+  lua_pushinteger(L, pid);
+  return 1;
+}
+
+static int l_libc_execve (lua_State *L) {
+  const char *filename = luaL_checkstring(L, 1);
+  /* 简化实现，返回-1表示执行失败 */
+  lua_pushinteger(L, -1);
+  return 1;
+}
+
+static int l_libc_wait (lua_State *L) {
+  int status;
+  pid_t pid = my_wait(&status);
+  lua_pushinteger(L, pid);
+  lua_pushinteger(L, status);
+  return 2;
+}
+
+static int l_libc_waitpid (lua_State *L) {
+  pid_t pid = luaL_checkinteger(L, 1);
+  int options = luaL_optinteger(L, 2, 0);
+  int status;
+  pid_t result = my_waitpid(pid, &status, options);
+  lua_pushinteger(L, result);
+  lua_pushinteger(L, status);
+  return 2;
+}
+
+static int l_libc_exit (lua_State *L) {
+  int status = luaL_optinteger(L, 1, 0);
+  my_exit(status);
+  /* 不会执行到这里 */
+  return 0;
+}
+
+
+/*
+** Signal handling functions (Lua bindings)
+*/
+
+static int l_libc_signal (lua_State *L) {
+  int signum = luaL_checkinteger(L, 1);
+  /* 简化实现，返回0表示成功 */
+  lua_pushinteger(L, 0);
+  return 1;
+}
+
+static int l_libc_kill (lua_State *L) {
+  pid_t pid = luaL_checkinteger(L, 1);
+  int sig = luaL_checkinteger(L, 2);
+  int result = my_kill(pid, sig);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_raise (lua_State *L) {
+  int sig = luaL_checkinteger(L, 1);
+  int result = my_raise(sig);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+
+/*
+** String functions
+*/
+
+static int l_libc_strlen (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  lua_pushinteger(L, my_strlen(s));
+  return 1;
+}
+
+
+static int l_libc_strcpy (lua_State *L) {
+  const char *src = luaL_checkstring(L, 2);
+  size_t len = my_strlen(src) + 1;
+  char *dst = (char *)lua_newuserdata(L, len);
+  my_strcpy(dst, src);
+  lua_pushstring(L, dst);
+  return 2;
+}
+
+
+static int l_libc_strncpy (lua_State *L) {
+  const char *src = luaL_checkstring(L, 2);
+  size_t n = luaL_checkinteger(L, 3);
+  char *dst = (char *)lua_newuserdata(L, n + 1);
+  my_strncpy(dst, src, n);
+  dst[n] = '\0';
+  lua_pushstring(L, dst);
+  return 2;
+}
+
+
+static int l_libc_strcat (lua_State *L) {
+  const char *s1 = luaL_checkstring(L, 1);
+  const char *s2 = luaL_checkstring(L, 2);
+  size_t len1 = my_strlen(s1);
+  size_t len2 = my_strlen(s2);
+  size_t total = len1 + len2 + 1;
+  char *dst = (char *)lua_newuserdata(L, total);
+  my_strcpy(dst, s1);
+  my_strcpy(dst + len1, s2);
+  lua_pushstring(L, dst);
+  return 2;
+}
+
+
+static int l_libc_strncat (lua_State *L) {
+  const char *s1 = luaL_checkstring(L, 1);
+  const char *s2 = luaL_checkstring(L, 2);
+  size_t n = luaL_checkinteger(L, 3);
+  size_t len1 = my_strlen(s1);
+  size_t len2 = my_strlen(s2);
+  size_t actual = (n < len2) ? n : len2;
+  size_t total = len1 + actual + 1;
+  char *dst = (char *)lua_newuserdata(L, total);
+  my_strcpy(dst, s1);
+  my_strncpy(dst + len1, s2, actual);
+  dst[len1 + actual] = '\0';
+  lua_pushstring(L, dst);
+  return 2;
+}
+
+
+static int l_libc_strcmp (lua_State *L) {
+  const char *s1 = luaL_checkstring(L, 1);
+  const char *s2 = luaL_checkstring(L, 2);
+  lua_pushinteger(L, my_strcmp(s1, s2));
+  return 1;
+}
+
+
+static int l_libc_strncmp (lua_State *L) {
+  const char *s1 = luaL_checkstring(L, 1);
+  const char *s2 = luaL_checkstring(L, 2);
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushinteger(L, my_strncmp(s1, s2, n));
+  return 1;
+}
+
+
+static int l_libc_strchr (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  int c = luaL_checkinteger(L, 2);
+  const char *p = my_strchr(s, c);
+  if (p == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushstring(L, p);
+  }
+  return 1;
+}
+
+
+static int l_libc_strrchr (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  int c = luaL_checkinteger(L, 2);
+  const char *p = my_strrchr(s, c);
+  if (p == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushstring(L, p);
+  }
+  return 1;
+}
+
+
+static int l_libc_strstr (lua_State *L) {
+  const char *haystack = luaL_checkstring(L, 1);
+  const char *needle = luaL_checkstring(L, 2);
+  const char *p = my_strstr(haystack, needle);
+  if (p == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushstring(L, p);
+  }
+  return 1;
+}
+
+
+static int l_libc_strtok (lua_State *L) {
+  const char *str = luaL_optstring(L, 1, NULL);
+  const char *delim = luaL_checkstring(L, 2);
+  char **saveptr = NULL;
+  char *token = NULL;
+  
+  /* 检查是否提供了saveptr */
+  if (lua_islightuserdata(L, 3)) {
+    saveptr = (char **)lua_touserdata(L, 3);
+  }
+  
+  if (str != NULL) {
+    /* strtok需要可修改的字符串，所以我们需要复制一份 */
+    size_t len = my_strlen(str) + 1;
+    char *copy = (char *)lua_newuserdata(L, len);
+    my_strcpy(copy, str);
+    
+    /* 创建saveptr并初始化 */
+    char **new_saveptr = (char **)lua_newuserdata(L, sizeof(char *));
+    *new_saveptr = copy;
+    
+    token = my_strtok(copy, delim, new_saveptr);
+    if (token != NULL) {
+      lua_pushstring(L, token);
+      return 3;
+    }
+  } else if (saveptr != NULL) {
+    /* 使用现有的saveptr继续分割 */
+    token = my_strtok(NULL, delim, saveptr);
+    if (token != NULL) {
+      lua_pushstring(L, token);
+      return 2;
+    }
+  }
+  
+  lua_pushnil(L);
+  return 1;
+}
+
+
+static int l_libc_tolower (lua_State *L) {
+  int c = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_tolower(c));
+  return 1;
+}
+
+
+static int l_libc_toupper (lua_State *L) {
+  int c = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_toupper(c));
+  return 1;
+}
+
+
+static int l_libc_strlwr (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  size_t len = my_strlen(s) + 1;
+  char *dst = (char *)lua_newuserdata(L, len);
+  my_strcpy(dst, s);
+  my_strlwr(dst);
+  lua_pushstring(L, dst);
+  return 2;
+}
+
+
+static int l_libc_strupr (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  size_t len = my_strlen(s) + 1;
+  char *dst = (char *)lua_newuserdata(L, len);
+  my_strcpy(dst, s);
+  my_strupr(dst);
+  lua_pushstring(L, dst);
+  return 2;
+}
+
+
+static int l_libc_strspn (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  const char *accept = luaL_checkstring(L, 2);
+  lua_pushinteger(L, my_strspn(s, accept));
+  return 1;
+}
+
+
+static int l_libc_strcspn (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  const char *reject = luaL_checkstring(L, 2);
+  lua_pushinteger(L, my_strcspn(s, reject));
+  return 1;
+}
+
+
+static int l_libc_strpbrk (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  const char *accept = luaL_checkstring(L, 2);
+  const char *p = my_strpbrk(s, accept);
+  if (p == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushstring(L, p);
+  }
+  return 1;
+}
+
+
+static int l_libc_strdup (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  char *dup = my_strdup(s);
+  if (dup == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushstring(L, dup);
+    free(dup);
+  }
+  return 1;
+}
+
+
+static int l_libc_strndup (lua_State *L) {
+  const char *s = luaL_checkstring(L, 1);
+  size_t n = luaL_checkinteger(L, 2);
+  char *dup = my_strndup(s, n);
+  if (dup == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushstring(L, dup);
+    free(dup);
+  }
+  return 1;
+}
+
+
+/*
+** Memory functions
+*/
+
+static int l_libc_memset (lua_State *L) {
+  const void *ptr = lua_topointer(L, 1);
+  if (ptr == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  void *s = (void *)ptr;
+  int c = luaL_checkinteger(L, 2);
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushlightuserdata(L, my_memset(s, c, n));
+  return 1;
+}
+
+
+static int l_libc_memcpy (lua_State *L) {
+  const void *dst_ptr = lua_topointer(L, 1);
+  const void *src_ptr = lua_topointer(L, 2);
+  if (dst_ptr == NULL || src_ptr == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  void *dst = (void *)dst_ptr;
+  const void *src = src_ptr;
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushlightuserdata(L, my_memcpy(dst, src, n));
+  return 1;
+}
+
+
+static int l_libc_memmove (lua_State *L) {
+  const void *dst_ptr = lua_topointer(L, 1);
+  const void *src_ptr = lua_topointer(L, 2);
+  if (dst_ptr == NULL || src_ptr == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  void *dst = (void *)dst_ptr;
+  const void *src = src_ptr;
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushlightuserdata(L, my_memmove(dst, src, n));
+  return 1;
+}
+
+
+static int l_libc_memcmp (lua_State *L) {
+  const void *s1 = lua_topointer(L, 1);
+  const void *s2 = lua_topointer(L, 2);
+  if (s1 == NULL || s2 == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushinteger(L, my_memcmp(s1, s2, n));
+  return 1;
+}
+
+
+static int l_libc_memchr (lua_State *L) {
+  const void *s = lua_topointer(L, 1);
+  if (s == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  int c = luaL_checkinteger(L, 2);
+  size_t n = luaL_checkinteger(L, 3);
+  void *p = my_memchr(s, c, n);
+  if (p == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushlightuserdata(L, p);
+  }
+  return 1;
+}
+
+
+static int l_libc_memmem (lua_State *L) {
+  const void *haystack = lua_topointer(L, 1);
+  size_t haystack_len = luaL_checkinteger(L, 2);
+  const void *needle = lua_topointer(L, 3);
+  size_t needle_len = luaL_checkinteger(L, 4);
+  
+  if (haystack == NULL || needle == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  
+  void *p = my_memmem(haystack, haystack_len, needle, needle_len);
+  if (p == NULL) {
+    lua_pushnil(L);
+  } else {
+    lua_pushlightuserdata(L, p);
+  }
+  return 1;
+}
+
+
+static int l_libc_memcmpfast (lua_State *L) {
+  const void *s1 = lua_topointer(L, 1);
+  const void *s2 = lua_topointer(L, 2);
+  if (s1 == NULL || s2 == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushinteger(L, my_memcmp_fast(s1, s2, n));
+  return 1;
+}
+
+static int l_libc_memcpy_fast (lua_State *L) {
+  const void *dst_ptr = lua_topointer(L, 1);
+  const void *src_ptr = lua_topointer(L, 2);
+  if (dst_ptr == NULL || src_ptr == NULL) {
+    return luaL_error(L, "空指针");
+  }
+  void *dst = (void *)dst_ptr;
+  const void *src = src_ptr;
+  size_t n = luaL_checkinteger(L, 3);
+  lua_pushlightuserdata(L, my_memcpy_fast(dst, src, n));
+  return 1;
+}
+
+
+/*
+** Math functions
+*/
+
+static int l_libc_abs (lua_State *L) {
+  int n = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_abs(n));
+  return 1;
+}
+
+
+static int l_libc_sqrt (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_sqrt(x));
+  return 1;
+}
+
+
+static int l_libc_pow (lua_State *L) {
+  double base = luaL_checknumber(L, 1);
+  double exponent = luaL_checknumber(L, 2);
+  lua_pushnumber(L, my_pow(base, exponent));
+  return 1;
+}
+
+
+static int l_libc_sin (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_sin(x));
+  return 1;
+}
+
+
+static int l_libc_cos (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_cos(x));
+  return 1;
+}
+
+
+static int l_libc_tan (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_tan(x));
+  return 1;
+}
+
+
+static int l_libc_floor (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_floor(x));
+  return 1;
+}
+
+
+static int l_libc_ceil (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_ceil(x));
+  return 1;
+}
+
+
+static int l_libc_round (lua_State *L) {
+  double x = luaL_checknumber(L, 1);
+  lua_pushnumber(L, my_round(x));
+  return 1;
+}
+
+
+static int l_libc_rand (lua_State *L) {
+  lua_pushinteger(L, my_rand());
+  return 1;
+}
+
+
+static int l_libc_srand (lua_State *L) {
+  unsigned int seed = (unsigned int)luaL_checkinteger(L, 1);
+  my_srand(seed);
+  return 0;
+}
+
+
+/*
+** CRC32校验函数
+*/
+static int l_libc_crc32 (lua_State *L) {
+  const char *data = luaL_checkstring(L, 1);
+  size_t len = my_strlen(data);
+  unsigned int crc = my_crc32((const unsigned char *)data, len);
+  lua_pushinteger(L, crc);
+  return 1;
+}
+
+
+/*
+** 哈希函数
+*/
+static int l_libc_hash (lua_State *L) {
+  const char *str = luaL_checkstring(L, 1);
+  unsigned int hash = my_hash(str);
+  lua_pushinteger(L, hash);
+  return 1;
+}
+
+
+/*
+** 位操作函数
+*/
+static int l_libc_band (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int b = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_band(a, b));
+  return 1;
+}
+
+
+static int l_libc_bor (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int b = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_bor(a, b));
+  return 1;
+}
+
+
+static int l_libc_bxor (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int b = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_bxor(a, b));
+  return 1;
+}
+
+
+static int l_libc_bnot (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_bnot(a));
+  return 1;
+}
+
+
+static int l_libc_bleft (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int n = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_bleft(a, n));
+  return 1;
+}
+
+
+static int l_libc_bright (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int n = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_bright(a, n));
+  return 1;
+}
+
+
+static int l_libc_bswap (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_bswap(a));
+  return 1;
+}
+
+
+static int l_libc_btest (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int n = luaL_checkinteger(L, 2);
+  lua_pushboolean(L, my_btest(a, n));
+  return 1;
+}
+
+
+static int l_libc_bset (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int n = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_bset(a, n));
+  return 1;
+}
+
+
+static int l_libc_bclear (lua_State *L) {
+  int a = luaL_checkinteger(L, 1);
+  int n = luaL_checkinteger(L, 2);
+  lua_pushinteger(L, my_bclear(a, n));
+  return 1;
+}
+
+
+/*
+** 获取CPU ID
+*/
+static int l_libc_get_cpu_id (lua_State *L) {
+  unsigned long cpu_id = 0;
+  
+  /* 普通C实现，使用固定值替代CPU ID */
+  /* 在没有内联汇编支持的情况下，无法直接获取硬件CPU ID */
+  cpu_id = 0x1234; /* 使用固定值 */
+  
+  lua_pushinteger(L, cpu_id);
+  return 1;
+}
+
+
+/*
+** 获取当前进程ID
+*/
+static int l_libc_get_pid (lua_State *L) {
+  /* 使用标准库函数获取当前进程ID */
+  pid_t pid = getpid();
+  lua_pushinteger(L, pid);
+  return 1;
+}
+
+
+/*
+** 获取当前线程ID
+*/
+static int l_libc_get_tid (lua_State *L) {
+  /* 使用getpid()作为线程ID的简化实现，因为在Android上gettid()需要特殊处理 */
+  pid_t tid = getpid();
+  lua_pushinteger(L, tid);
+  return 1;
+}
+
+
+
+
+
+/*
+** 文件系统函数实现
+*/
+
+/* 创建目录 */
+static int my_mkdir(const char *pathname, mode_t mode) {
+  /* 使用标准库函数创建目录 */
+  return mkdir(pathname, mode);
+}
+
+/* 删除目录 */
+static int my_rmdir(const char *pathname) {
+  /* 使用标准库函数删除目录 */
+  return rmdir(pathname);
+}
+
+/* 改变文件权限 */
+static int my_chmod(const char *pathname, mode_t mode) {
+  /* 使用标准库函数改变文件权限 */
+  return chmod(pathname, mode);
+}
+
+/* 改变文件所有者 */
+static int my_chown(const char *pathname, uid_t owner, gid_t group) {
+  /* 使用标准库函数改变文件所有者 */
+  return chown(pathname, owner, group);
+}
+
+/* 删除文件 */
+static int my_unlink(const char *pathname) {
+  /* 使用标准库函数删除文件 */
+  return unlink(pathname);
+}
+
+/* 重命名文件或目录 */
+static int my_rename(const char *oldpath, const char *newpath) {
+  /* 使用标准库函数重命名文件或目录 */
+  return rename(oldpath, newpath);
+}
+
+/* 获取文件状态 */
+static int my_stat(const char *pathname, struct stat *buf) {
+  /* 使用标准库函数获取文件状态 */
+  return stat(pathname, buf);
+}
+
+/* 其他实用函数实现 */
+
+/* 快速排序 */
+static void my_qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
+  /* 简化实现，使用冒泡排序 */
+  char *ptr = (char *)base;
+  for (size_t i = 0; i < nmemb - 1; i++) {
+    for (size_t j = 0; j < nmemb - i - 1; j++) {
+      if (compar(ptr + j * size, ptr + (j + 1) * size) > 0) {
+        /* 交换元素 */
+        for (size_t k = 0; k < size; k++) {
+          char temp = ptr[j * size + k];
+          ptr[j * size + k] = ptr[(j + 1) * size + k];
+          ptr[(j + 1) * size + k] = temp;
+        }
+      }
+    }
+  }
+}
+
+/* 二分查找 */
+static void *my_bsearch(const void *key, const void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
+  const char *ptr = (const char *)base;
+  size_t low = 0;
+  size_t high = nmemb - 1;
+  
+  while (low <= high) {
+    size_t mid = (low + high) / 2;
+    int cmp = compar(key, ptr + mid * size);
+    if (cmp == 0) {
+      return (void *)(ptr + mid * size);
+    } else if (cmp < 0) {
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  
+  return NULL;
+}
+
+/* 长整数绝对值 */
+static long my_labs(long n) {
+  return (n < 0) ? -n : n;
+}
+
+/* 长长整数绝对值 */
+static long long my_llabs(long long n) {
+  return (n < 0) ? -n : n;
+}
+
+/* 整数除法 */
+static div_t my_div(int numer, int denom) {
+  div_t result;
+  result.quot = numer / denom;
+  result.rem = numer % denom;
+  /* 确保余数与被除数同号 */
+  if (result.rem != 0 && ((result.rem < 0) != (numer < 0))) {
+    result.rem += denom;
+    result.quot -= 1;
+  }
+  return result;
+}
+
+/* 长整数除法 */
+static ldiv_t my_ldiv(long numer, long denom) {
+  ldiv_t result;
+  result.quot = numer / denom;
+  result.rem = numer % denom;
+  /* 确保余数与被除数同号 */
+  if (result.rem != 0 && ((result.rem < 0) != (numer < 0))) {
+    result.rem += denom;
+    result.quot -= 1;
+  }
+  return result;
+}
+
+/* 长长整数除法 */
+static lldiv_t my_lldiv(long long numer, long long denom) {
+  lldiv_t result;
+  result.quot = numer / denom;
+  result.rem = numer % denom;
+  /* 确保余数与被除数同号 */
+  if (result.rem != 0 && ((result.rem < 0) != (numer < 0))) {
+    result.rem += denom;
+    result.quot -= 1;
+  }
+  return result;
+}
+
+/*
+** 文件系统函数（Lua绑定）
+*/
+
+static int l_libc_mkdir (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  mode_t mode = luaL_optinteger(L, 2, 0755);
+  int result = my_mkdir(pathname, mode);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_rmdir (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  int result = my_rmdir(pathname);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_chmod (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  mode_t mode = luaL_checkinteger(L, 2);
+  int result = my_chmod(pathname, mode);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_chown (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  uid_t owner = luaL_checkinteger(L, 2);
+  gid_t group = luaL_checkinteger(L, 3);
+  int result = my_chown(pathname, owner, group);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_unlink (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  int result = my_unlink(pathname);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_rename (lua_State *L) {
+  const char *oldpath = luaL_checkstring(L, 1);
+  const char *newpath = luaL_checkstring(L, 2);
+  int result = my_rename(oldpath, newpath);
+  lua_pushinteger(L, result);
+  return 1;
+}
+
+static int l_libc_stat (lua_State *L) {
+  const char *pathname = luaL_checkstring(L, 1);
+  struct stat buf;
+  int result = my_stat(pathname, &buf);
+  if (result == -1) {
+    lua_pushnil(L);
+    return 1;
+  }
+  
+  /* 创建Lua表存储stat信息 */
+  lua_newtable(L);
+  lua_pushinteger(L, buf.st_dev);
+  lua_setfield(L, -2, "st_dev");
+  lua_pushinteger(L, buf.st_ino);
+  lua_setfield(L, -2, "st_ino");
+  lua_pushinteger(L, buf.st_mode);
+  lua_setfield(L, -2, "st_mode");
+  lua_pushinteger(L, buf.st_nlink);
+  lua_setfield(L, -2, "st_nlink");
+  lua_pushinteger(L, buf.st_uid);
+  lua_setfield(L, -2, "st_uid");
+  lua_pushinteger(L, buf.st_gid);
+  lua_setfield(L, -2, "st_gid");
+  lua_pushinteger(L, buf.st_rdev);
+  lua_setfield(L, -2, "st_rdev");
+  lua_pushinteger(L, buf.st_size);
+  lua_setfield(L, -2, "st_size");
+  lua_pushinteger(L, buf.st_atime);
+  lua_setfield(L, -2, "st_atime");
+  lua_pushinteger(L, buf.st_mtime);
+  lua_setfield(L, -2, "st_mtime");
+  lua_pushinteger(L, buf.st_ctime);
+  lua_setfield(L, -2, "st_ctime");
+  lua_pushinteger(L, buf.st_blksize);
+  lua_setfield(L, -2, "st_blksize");
+  lua_pushinteger(L, buf.st_blocks);
+  lua_setfield(L, -2, "st_blocks");
+  
+  return 1;
+}
+
+/* 其他实用函数（Lua绑定） */
+
+static int l_libc_qsort (lua_State *L) {
+  /* 简化实现，不支持Lua函数作为比较函数 */
+  lua_pushnil(L);
+  return 1;
+}
+
+static int l_libc_bsearch (lua_State *L) {
+  /* 简化实现，不支持Lua函数作为比较函数 */
+  lua_pushnil(L);
+  return 1;
+}
+
+static int l_libc_labs (lua_State *L) {
+  long n = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_labs(n));
+  return 1;
+}
+
+static int l_libc_llabs (lua_State *L) {
+  long long n = luaL_checkinteger(L, 1);
+  lua_pushinteger(L, my_llabs(n));
+  return 1;
+}
+
+static int l_libc_div (lua_State *L) {
+  int numer = luaL_checkinteger(L, 1);
+  int denom = luaL_checkinteger(L, 2);
+  div_t result = my_div(numer, denom);
+  
+  lua_newtable(L);
+  lua_pushinteger(L, result.quot);
+  lua_setfield(L, -2, "quot");
+  lua_pushinteger(L, result.rem);
+  lua_setfield(L, -2, "rem");
+  
+  return 1;
+}
+
+static int l_libc_ldiv (lua_State *L) {
+  long numer = luaL_checkinteger(L, 1);
+  long denom = luaL_checkinteger(L, 2);
+  ldiv_t result = my_ldiv(numer, denom);
+  
+  lua_newtable(L);
+  lua_pushinteger(L, result.quot);
+  lua_setfield(L, -2, "quot");
+  lua_pushinteger(L, result.rem);
+  lua_setfield(L, -2, "rem");
+  
+  return 1;
+}
+
+static int l_libc_lldiv (lua_State *L) {
+  long long numer = luaL_checkinteger(L, 1);
+  long long denom = luaL_checkinteger(L, 2);
+  lldiv_t result = my_lldiv(numer, denom);
+  
+  lua_newtable(L);
+  lua_pushinteger(L, result.quot);
+  lua_setfield(L, -2, "quot");
+  lua_pushinteger(L, result.rem);
+  lua_setfield(L, -2, "rem");
+  
+  return 1;
+}
+
+/*
+** Register the libc module functions
+*/
+static const luaL_Reg libclib[] = {
+  /* String functions */
+  {"strlen", l_libc_strlen},
+  {"strcpy", l_libc_strcpy},
+  {"strncpy", l_libc_strncpy},
+  {"strcat", l_libc_strcat},
+  {"strncat", l_libc_strncat},
+  {"strcmp", l_libc_strcmp},
+  {"strncmp", l_libc_strncmp},
+  {"strchr", l_libc_strchr},
+  {"strrchr", l_libc_strrchr},
+  {"strstr", l_libc_strstr},
+  {"strtok", l_libc_strtok},
+  {"tolower", l_libc_tolower},
+  {"toupper", l_libc_toupper},
+  {"strlwr", l_libc_strlwr},
+  {"strupr", l_libc_strupr},
+  {"strspn", l_libc_strspn},
+  {"strcspn", l_libc_strcspn},
+  {"strpbrk", l_libc_strpbrk},
+  {"strdup", l_libc_strdup},
+  {"strndup", l_libc_strndup},
+  
+  /* String conversion functions */
+  {"atoi", l_libc_atoi},
+  {"atol", l_libc_atol},
+  {"atof", l_libc_atof},
+  {"strtol", l_libc_strtol},
+  {"strtoul", l_libc_strtoul},
+  {"strtod", l_libc_strtod},
+  
+  /* Error handling functions */
+  {"errno", l_libc_get_errno},
+  {"seterrno", l_libc_set_errno},
+  {"perror", l_libc_perror},
+  {"strerror", l_libc_strerror},
+  
+  /* Time functions */
+  {"time", l_libc_time},
+  {"gmtime", l_libc_gmtime},
+  {"localtime", l_libc_localtime},
+  {"mktime", l_libc_mktime},
+  {"asctime", l_libc_asctime},
+  {"strftime", l_libc_strftime},
+  
+  /* Input/Output functions */
+  {"getchar", l_libc_getchar},
+  {"putchar", l_libc_putchar},
+  {"printf", l_libc_printf},
+  {"scanf", l_libc_scanf},
+  {"sscanf", l_libc_sscanf},
+  
+  /* File operation functions */
+  {"fopen", l_libc_fopen},
+  {"fclose", l_libc_fclose},
+  {"fread", l_libc_fread},
+  {"fwrite", l_libc_fwrite},
+  {"fseek", l_libc_fseek},
+  {"ftell", l_libc_ftell},
+  {"rewind", l_libc_rewind},
+  
+  /* File system functions */
+  {"mkdir", l_libc_mkdir},
+  {"rmdir", l_libc_rmdir},
+  {"chmod", l_libc_chmod},
+  {"chown", l_libc_chown},
+  {"unlink", l_libc_unlink},
+  {"rename", l_libc_rename},
+  {"stat", l_libc_stat},
+  
+  /* Process control functions */
+  {"fork", l_libc_fork},
+  {"execve", l_libc_execve},
+  {"wait", l_libc_wait},
+  {"waitpid", l_libc_waitpid},
+  {"exit", l_libc_exit},
+  
+  /* Signal handling functions */
+  {"signal", l_libc_signal},
+  {"kill", l_libc_kill},
+  {"raise", l_libc_raise},
+  
+  /* Memory functions */
+  {"memset", l_libc_memset},
+  {"memcpy", l_libc_memcpy},
+  {"memmove", l_libc_memmove},
+  {"memcmp", l_libc_memcmp},
+  {"memchr", l_libc_memchr},
+  {"memcpyfast", l_libc_memcpy_fast},
+  {"memmem", l_libc_memmem},
+  {"memcmpfast", l_libc_memcmpfast},
+  
+  /* Dynamic memory allocation */
+  {"malloc", l_libc_malloc},
+  {"calloc", l_libc_calloc},
+  {"realloc", l_libc_realloc},
+  {"free", l_libc_free},
+  
+  /* Math functions */
+  {"abs", l_libc_abs},
+  {"labs", l_libc_labs},
+  {"llabs", l_libc_llabs},
+  {"div", l_libc_div},
+  {"ldiv", l_libc_ldiv},
+  {"lldiv", l_libc_lldiv},
+  {"sqrt", l_libc_sqrt},
+  {"pow", l_libc_pow},
+  {"sin", l_libc_sin},
+  {"cos", l_libc_cos},
+  {"tan", l_libc_tan},
+  {"floor", l_libc_floor},
+  {"ceil", l_libc_ceil},
+  {"round", l_libc_round},
+  
+  /* Utility functions */
+  {"qsort", l_libc_qsort},
+  {"bsearch", l_libc_bsearch},
+  
+  /* Random functions */
+  {"rand", l_libc_rand},
+  {"srand", l_libc_srand},
+  
+  /* CRC32 and Hash functions */
+  {"crc32", l_libc_crc32},
+  {"hash", l_libc_hash},
+  
+  /* Bit manipulation functions */
+  {"band", l_libc_band},
+  {"bor", l_libc_bor},
+  {"bxor", l_libc_bxor},
+  {"bnot", l_libc_bnot},
+  {"bleft", l_libc_bleft},
+  {"bright", l_libc_bright},
+  {"bswap", l_libc_bswap},
+  {"btest", l_libc_btest},
+  {"bset", l_libc_bset},
+  {"bclear", l_libc_bclear},
+  
+  /* System call functions */
+  /* {"syscall", l_libc_syscall}, 移除：依赖无法实现的my_syscall */
+  
+  /* ARM specific functions */
+  {"getcpuid", l_libc_get_cpu_id},
+  {"getpid", l_libc_get_pid},
+  {"gettid", l_libc_get_tid},
+  /* {"clockgettime", l_libc_clock_gettime}, 移除：依赖无法实现的my_syscall */
+  
+  {NULL, NULL}
+};
+
+
+/*
+** Open the libc module
+*/
+LUAMOD_API int luaopen_libc (lua_State *L) {
+  luaL_newlib(L, libclib);
+  return 1;
+}
