@@ -187,7 +187,7 @@ public class LexState extends Constants {
             "+=", "-=", "*=", "/=", "//=", "%=", "&=", "|=", "~=", ">>=", "<<=", "..=", "++",
             "?.", "??",
             "<number>", "<name>", "<string>", "<eof>",
-            "defer", "import", "module", "async", "await", "struct", "concept", "namespace",
+            "defer", "import", "module", "async", "await", "struct", "superstruct", "concept", "namespace",
     };
 
     final static String luaX_cn_tokens[] = {

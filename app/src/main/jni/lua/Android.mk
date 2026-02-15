@@ -68,6 +68,7 @@ LOCAL_SRC_FILES := \
 	lvmpro.c\
 	logtable.c \
 	json_parser.c \
+	lsuper.c\
 	lstruct.c \
 	sha256.c \
 	lobfuscate.c

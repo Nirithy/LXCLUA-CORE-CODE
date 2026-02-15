@@ -31,7 +31,7 @@ public final class AutoCompletePackages {
             "onItemClick", "onItemLongClick", "java", "async", "await",
             // OOP 面向对象关键字
             "abstract", "class", "extends", "final", "implements", "interface", "new",
-            "super", "private", "protected", "public", "static", "struct", "concept", "namespace",
+            "super", "superstruct", "private", "protected", "public", "static", "struct", "concept", "namespace",
             // 类型关键字
             "bool", "char", "double", "float", "int", "long", "void", "asm", "using", "requires");
 

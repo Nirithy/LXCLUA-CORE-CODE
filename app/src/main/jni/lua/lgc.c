@@ -22,6 +22,7 @@
 #include "lfunc.h"
 #include "lgc.h"
 #include "lnamespace.h"
+#include "lsuper.h"
 #include "lmem.h"
 #include "lobject.h"
 #include "lstate.h"
@@ -344,6 +345,18 @@ GCObject *luaC_newobj (lua_State *L, int tt, size_t sz) {
  */
 static void reallymarkobject (global_State *g, GCObject *o) {
   switch (o->tt) {
+    case LUA_VSUPERSTRUCT: {
+      SuperStruct *ss = gco2superstruct(o);
+      markobjectN(g, ss->name);
+      if (ss->data) {
+        unsigned int i;
+        for (i = 0; i < ss->nsize * 2; i++) {
+          markvalue(g, &ss->data[i]);
+        }
+      }
+      set2black(o);
+      break;
+    }
     case LUA_VSTRUCT: {
       Struct *s = gco2struct(o);
       markobjectN(g, s->def);
@@ -968,6 +981,11 @@ static void freeobj (lua_State *L, GCObject *o) {
     case LUA_VUPVAL:
       freeupval(L, gco2upv(o));
       break;
+    case LUA_VSUPERSTRUCT: {
+      SuperStruct *ss = gco2superstruct(o);
+      luaS_freesuperstruct(L, ss);
+      break;
+    }
     case LUA_VSTRUCT: {
       Struct *s = gco2struct(o);
       if (s->data == s->inline_data.d)
@@ -1013,7 +1031,15 @@ static void freeobj (lua_State *L, GCObject *o) {
     }
     case LUA_VLNGSTR: {
       TString *ts = gco2ts(o);
-      luaM_freemem(L, ts, sizelstring(ts->u.lnglen));
+      if (isextstr(ts)) {
+        TExternalString *ts_ext = (TExternalString *)ts;
+        if (ts_ext->falloc)
+          (*ts_ext->falloc)(ts_ext->ud, (void *)ts_ext->src, ts_ext->u.lnglen + 1, 0);
+        luaM_freemem(L, ts, sizeof(TExternalString));
+      }
+      else {
+        luaM_freemem(L, ts, sizelstring(ts->u.lnglen));
+      }
       break;
     }
     case LUA_VNUMBIG: {
@@ -1275,7 +1301,7 @@ static void correctpointers (global_State *g, GCObject *o) {
  * @param o The object to check.
  * @param mt The metatable of the object.
  */
-void luaC_checkfinalizer (lua_State *L, GCObject *o, Table *mt) {
+void luaC_checkfinalizer (lua_State *L, GCObject *o, GCObject *mt) {
   global_State *g = G(L);
   if (tofinalize(o) ||                 /* obj. is already marked... */
       gfasttm(g, mt, TM_GC) == NULL ||    /* or has no finalizer... */

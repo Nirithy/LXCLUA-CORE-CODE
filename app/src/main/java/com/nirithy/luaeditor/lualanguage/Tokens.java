@@ -154,6 +154,7 @@ public enum Tokens {
 
     // 结构体关键字
     STRUCT,         // struct (结构体定义)
+    SUPERSTRUCT,    // superstruct (超级结构体)
 
     // 概念/约束关键字
     CONCEPT,        // concept (模板约束)

@@ -255,6 +255,7 @@ Number = {DecNumber} | {HexNumber} | {BinNumber}
   "async"                   { return ASYNC; }
   "await"                   { return AWAIT; }
   "struct"                  { return STRUCT; }
+  "superstruct"             { return SUPERSTRUCT; }
   "concept"                 { return CONCEPT; }
   "namespace"               { return NAMESPACE; }
 

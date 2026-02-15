@@ -168,7 +168,7 @@ static int clone_aux (lua_State *L,int idx) {
     return 1;
 }
 
-static int clone (lua_State *L) {
+static int t_clone (lua_State *L) {
     luaL_checktype(L, 1, LUA_TTABLE);
     lua_newtable(L);
     lua_insert(L,1);
@@ -759,7 +759,7 @@ static const luaL_Reg tab_funcs[] = {
 	{"clear", clear},
 	{"find", find},
 	{"gfind", gfind},
-	{"clone", clone},
+	{"clone", t_clone},
 	{"const", tconst},
 #endif
 	{"add", tadd},
@@ -792,7 +792,7 @@ LUAMOD_API int luaopen_table (lua_State *L) {
     lua_setfield(L, -2, "__sub");
 
     /* set it as the default metatable for tables */
-    G(L)->mt[LUA_TTABLE] = hvalue(s2v(L->top.p - 1));
+    G(L)->mt[LUA_TTABLE] = gcvalue(s2v(L->top.p - 1));
 
     lua_pop(L, 1); /* pop metatable */
 

@@ -126,6 +126,7 @@ public class LuaFormatter extends AsyncFormatter {
             case CLASS:     // 类定义增加缩进
             case INTERFACE: // 接口定义增加缩进
             case STRUCT:    // 结构体定义增加缩进
+            case SUPERSTRUCT: // 超级结构体定义增加缩进
             case CONCEPT:   // 概念定义增加缩进
             case NAMESPACE: // 命名空间定义增加缩进
                 return 1;
@@ -278,6 +279,7 @@ public class LuaFormatter extends AsyncFormatter {
                     case CLASS:
                     case INTERFACE:
                     case STRUCT:
+                    case SUPERSTRUCT:
                     case CONCEPT:
                     case NAMESPACE:
                         sb.append(createIndent(level * indentWidth));

@@ -907,6 +907,7 @@ public class LuaIncrementalAnalyzeManager
                 case EXPORT:
                 case DEFER:
                 case STRUCT:
+                case SUPERSTRUCT:
                 case CONCEPT:
                 case NAMESPACE:
                 case USING:

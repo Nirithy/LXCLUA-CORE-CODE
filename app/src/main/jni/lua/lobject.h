@@ -53,6 +53,7 @@ typedef union Value {
   void *p;         /**< light userdata */
   void *ptr;       /**< raw pointer type */
   struct Struct *struct_; /**< struct values */
+  struct SuperStruct *superstruct; /**< superstruct objects */
   struct Namespace *ns;   /**< namespace objects */
   lua_CFunction f; /**< light C functions */
   lua_Integer i;   /**< integer numbers */
@@ -453,13 +454,28 @@ typedef struct TString {
     struct TString *hnext;  /**< linked list for hash table */
   } u;
   char contents[1]; /**< string data */
-  lua_Alloc falloc;  /**< deallocation function for external strings */
-  void *ud;  /**< user data for external strings */
 } TString;
 
+/**
+ * @brief Header for an external string value.
+ */
+typedef struct TExternalString {
+  CommonHeader;
+  lu_byte extra;  /**< reserved words for short strings; "has hash" for longs */
+  lu_byte shrlen;  /**< length for short strings, 0xFF for long strings */
+  unsigned int hash; /**< hash code */
+  union {
+    size_t lnglen;  /**< length for long strings */
+    struct TString *hnext;  /**< linked list for hash table */
+  } u;
+  const char *src; /**< pointer to string data */
+  lua_Alloc falloc;  /**< deallocation function for external strings */
+  void *ud;  /**< user data for external strings */
+} TExternalString;
 
-#define strisshr(ts)	((ts)->shrlen >= 0)
-#define isextstr(ts)	(ttislngstring(ts) && tsvalue(ts)->shrlen != LSTRREG)
+
+#define strisshr(ts)	((ts)->tt == LUA_VSHRSTR)
+#define isextstr(ts)	((ts)->tt == LUA_VLNGSTR && (ts)->shrlen != (lu_byte)LSTRREG)
 
 /*
 ** Get the actual string (array of bytes) from a 'TString'. (Generic
@@ -467,8 +483,8 @@ typedef struct TString {
 */
 #define rawgetshrstr(ts)  (cast_charp(&(ts)->contents))
 #define getshrstr(ts)	check_exp(strisshr(ts), rawgetshrstr(ts))
-#define getlngstr(ts)	check_exp(!strisshr(ts), (ts)->contents)
-#define getstr(ts) 	(strisshr(ts) ? rawgetshrstr(ts) : (ts)->contents)
+#define getlngstr(ts)	check_exp(!strisshr(ts), (isextstr(ts) ? ((TExternalString*)(ts))->src : (ts)->contents))
+#define getstr(ts) 	(strisshr(ts) ? rawgetshrstr(ts) : getlngstr(ts))
 
 
 /* get string length from 'TString *s' */
@@ -576,7 +592,7 @@ typedef struct Udata {
   CommonHeader;
   unsigned short nuvalue;  /**< number of user values */
   size_t len;  /**< number of bytes */
-  struct Table *metatable; /**< metatable */
+  struct GCObject *metatable; /**< metatable */
   GCObject *gclist; /**< garbage collector list */
   UValue uv[1];  /**< user values */
 } Udata;
@@ -591,7 +607,7 @@ typedef struct Udata0 {
   CommonHeader;
   unsigned short nuvalue;  /**< number of user values */
   size_t len;  /**< number of bytes */
-  struct Table *metatable; /**< metatable */
+  struct GCObject *metatable; /**< metatable */
   union {LUAI_MAXALIGN;} bindata; /**< data */
 } Udata0;
 
@@ -893,6 +909,33 @@ typedef struct Namespace {
 
 /*
 ** {=======================================================
+** Super Structs
+** ========================================================
+*/
+
+#define LUA_VSUPERSTRUCT	makevariant(LUA_TSUPERSTRUCT, 0)
+
+#define ttissuperstruct(o)		checktag((o), ctb(LUA_VSUPERSTRUCT))
+
+#define superstructvalue(o)	check_exp(ttissuperstruct(o), gco2superstruct(val_(o).gc))
+
+#define setsuperstructvalue(L,obj,x) \
+  { TValue *io = (obj); SuperStruct *x_ = (x); \
+    val_(io).gc = obj2gco(x_); settt_(io, ctb(LUA_VSUPERSTRUCT)); \
+    checkliveness(L,io); }
+
+typedef struct SuperStruct {
+  CommonHeader;
+  TString *name;
+  unsigned int nsize;
+  TValue *data;
+} SuperStruct;
+
+#define gco2superstruct(o)	check_exp((o)->tt == LUA_VSUPERSTRUCT, &((cast_u(o) - offsetof(SuperStruct, next))->superstruct))
+
+
+/*
+** {=======================================================
 ** Tables
 ** ========================================================
 */
@@ -967,7 +1010,7 @@ typedef struct Table {
   TValue *array;  /**< Array part. */
   Node *node;      /**< Hash part. */
   Node *lastfree;  /**< Any free position is before this position. */
-  struct Table *metatable; /**< Metatable pointer. */
+  struct GCObject *metatable; /**< Metatable pointer. */
   GCObject *gclist; /**< garbage collector list */
   lu_byte type;    /**< Custom type flag. */
   l_rwlock_t lock; /**< Lock for thread safety. */

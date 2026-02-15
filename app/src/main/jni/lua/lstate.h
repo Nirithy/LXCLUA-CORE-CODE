@@ -321,7 +321,7 @@ typedef struct global_State {
   struct lua_State *mainthread; /**< main thread */
   TString *memerrmsg;  /**< message for memory-allocation errors */
   TString *tmname[TM_N];  /**< array with tag-method names */
-  struct Table *mt[LUA_NUMTYPES];  /**< metatables for basic types */
+  struct GCObject *mt[LUA_NUMTYPES];  /**< metatables for basic types */
   TString *strcache[STRCACHE_N][STRCACHE_M];  /**< cache for strings in API */
   lua_WarnFunction warnf;  /**< warning function */
   void *ud_warn;         /**< auxiliary data to 'warnf' */
@@ -392,6 +392,7 @@ union GCUnion {
   struct lua_State th;  /* thread */
   struct UpVal upv;
   struct Struct struct_;
+  struct SuperStruct superstruct;
   struct Concept concept;
   struct Namespace ns;
 };
