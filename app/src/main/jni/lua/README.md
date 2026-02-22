@@ -68,6 +68,7 @@ LXCLUA-NCore 引入了大量现代语言特性和语法糖，极大地扩展了 
 - **比较**: `!=` (等价于 `~=`), `<=>` (三路比较)
 - **空值处理**: `??` (空值合并), `?.` (可选链)
 - **管道操作**: `|>` (正向), `<|` (反向), `|?>` (安全正向)
+- **赋值表达式**: `:=` (Walrus Operator) 允许在表达式中进行赋值
 
 ```lua
 -- 复合赋值与自增
@@ -89,13 +90,19 @@ local port = config?.server?.port  -- 8080
 local timeout = config?.client?.timeout  -- nil (不会报错)
 
 -- 管道操作符 (Pipe Operator)
--- x |> f 等价于 f(x)
-local result = "hello" |> string.upper |> print  -- HELLO
+-- x |> f 等价于 f(x) 但返回 x (Tap 语义)
+local result = "hello" |> string.upper |> print  -- 打印 HELLO, result 为 "hello"
 
 -- 安全管道 (Safe Pipe)
 -- x |?> f 等价于 x and f(x)
 local maybe_nil = nil
 maybe_nil |?> print  -- (什么都不打印)
+
+-- 赋值表达式 (Walrus Operator)
+local x
+if (x := 100) > 50 then
+    print(x) -- 100
+end
 ```
 
 ### 2. 字符串增强 (Enhanced Strings)
@@ -133,8 +140,12 @@ print(add(10, 20))  -- 30
 -- 箭头函数 (语句块形式)
 local log = (msg) => print("[LOG]: " .. msg)
 
+-- 箭头函数 (-> 语法)
+local fast_add = ->(a, b) { return a + b }
+local simple_action = -> { print("Action") }
+
 -- Lambda 表达式
-local sq = lambda(x) => x * x
+local sq = lambda(x): x * x
 
 -- C 风格强类型函数
 int sum(int a, int b) {
@@ -142,7 +153,7 @@ int sum(int a, int b) {
 }
 
 -- 泛型函数
-function<T> identity(x)
+function(T)(x)
     return x
 end
 
@@ -162,6 +173,7 @@ end
 - **属性访问器**: `get prop() ... end`, `set prop(v) ... end`
 - **实例化**: `new Class(...)` (或 `onew`)
 - **父类访问**: `super.method(...)` (或 `osuper`)
+- **概念 (Concept)**: `concept Name(args) ... end` 定义谓词或类型约束
 
 ```lua
 interface Drawable
@@ -208,11 +220,17 @@ local c = Circle.create(10)
 c.radius = 20
 print(c.radius)  -- 20
 c:draw()
+
+-- 概念定义
+concept IsPositive(x)
+    return x > 0
+end
 ```
 
 ### 5. 结构体与类型 (Structs & Types)
 
 - **结构体**: `struct Name { Type field; ... }`
+- **超结构体 (SuperStruct)**: `superstruct Name [ key: value, ... ]`
 - **泛型结构体**: `struct Box(T) { T value; }`
 - **枚举**: `enum Name { A, B=10 }`
 - **强类型变量**: `int`, `float`, `bool`, `string` 等
@@ -229,6 +247,16 @@ struct Point {
 local p = Point()
 p.x = 10
 p.y = 20
+
+-- 定义超结构体 (类似强化版 Table)
+superstruct MetaPoint [
+    x: 0,
+    y: 0,
+    ["move"]: function(self, dx, dy)
+        self.x = self.x + dx
+        self.y = self.y + dy
+    end
+]
 
 -- 定义枚举
 enum Color {
@@ -256,14 +284,18 @@ print(x, y)  -- 1, 2
 - **Defer**: `defer statement` 或 `defer do ... end`
 - **When**: 类似于 `if-elseif-else` 的语法糖
 - **Namespace**: `namespace Name { ... }`, `using namespace Name;`
+- **Continue**: `continue` 跳过循环当前迭代
+- **With**: `with (expr) { ... }` 临时进入对象作用域
 
 ```lua
 -- Switch 语句
 switch (val) do
     case 1:
         print("One")
+        break
     case "test":
         print("Test string")
+        break
     default:
         print("Other")
 end
@@ -273,6 +305,15 @@ local res = switch(val) do
     case 1: return "A"
     case 2: return "B"
 end
+
+-- When 语句
+local x = 10
+when x == 1
+    print("x is 1")
+case x == 10
+    print("x is 10")
+else
+    print("other")
 
 -- Try-Catch 异常处理
 try
@@ -299,6 +340,18 @@ MyLib::test()
 
 using namespace MyLib;
 print(version)  -- 1
+
+-- Continue
+for i = 1, 10 do
+    if i % 2 == 0 then continue end
+    print(i)
+end
+
+-- With 语句
+local obj = { x = 10, y = 20 }
+with (obj) {
+    print(x + y) -- 30 (直接访问 obj.x 和 obj.y)
+}
 ```
 
 ### 7. 元编程 (Metaprogramming)
@@ -323,9 +376,10 @@ end
 
 -- 预处理指令
 $define DEBUG 1
+$alias print_debug = print
 
 $if DEBUG
-    print("Debug mode on")
+    print_debug("Debug mode on")
 $else
     print("Debug mode off")
 $end
@@ -340,9 +394,78 @@ asm(
     LOADI 0 100
     LOADI 1 200
     ADD 2 0 1
-    _print "Result: " 2
+    _print "Result: " 2 ; 编译时打印
+    nop 5                ; 插入 5 个 NOP 指令
 )
 ```
+
+### 9. 模块与作用域 (Modules & Scope)
+
+- **导出 (Export)**: `export` 关键字标记模块公开成员。
+- **全局 (Global)**: `global` 关键字用于在局部作用域中显式定义全局变量。
+
+```lua
+export function myFunc()
+    return "exported"
+end
+
+export struct MyData { int id; }
+
+-- 局部作用域定义全局函数
+global function init()
+    print("Global init")
+end
+```
+
+
+### 10. 扩展库示例 (Extended Libraries)
+
+#### 文件系统 (fs)
+```lua
+local fs = require "fs"
+
+-- 检查文件是否存在
+if fs.exists("README.md") then
+    local info = fs.stat("README.md")
+    print("Size: " .. info.size)
+end
+
+-- 列出当前目录
+local files = fs.ls(".")
+for k, v in pairs(files) do
+    print(v)
+end
+```
+
+#### HTTP 网络 (http)
+```lua
+local http = require "http"
+
+-- HTTP GET 请求
+-- local status, body = http.get("http://example.com")
+
+-- TCP Socket 客户端
+-- local client = http.client("127.0.0.1", 8080)
+-- if client then
+--     client:send("ping")
+--     client:close()
+-- end
+```
+
+#### 多线程 (thread)
+```lua
+local thread = require "thread"
+
+-- 创建并运行线程
+local t = thread.create(function(a, b)
+    return a + b
+end)
+
+-- 等待线程结束并获取结果
+local res = t:join(10, 20)
+print("Thread result: " .. tostring(res))  -- 30
+```
+
 
 ## 系统要求
 
