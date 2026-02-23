@@ -1,6 +1,5 @@
 require "env"
 setStatus()
-local OkHttpUtil = require "utils.OkHttpUtil"
 local GlideUtil = require "utils.GlideUtil"
 local Utils = require "utils.Utils"
 local ActivityUtil = require "utils.ActivityUtil"
@@ -21,8 +20,6 @@ local SwipeRefreshLayout = bindClass "androidx.swiperefreshlayout.widget.SwipeRe
 local ObjectAnimator = bindClass "android.animation.ObjectAnimator"
 local Handler = bindClass "android.os.Handler"
 
--- API设置
-local API_BASE_URL = "https://luaappx.top/forum/"
 local TAB_TITLES = {res.string.my_posts, res.string.purchased_post, res.string.favorites_post, res.string.off_the_shelf}
 local PAGE_TYPES = {"my_posts", "purchased", "favorites", "removed"}
 
@@ -207,9 +204,8 @@ local function initAdapter(i)
 
       local currentData = dataHolder.data[position + 1]
       local avatar = tostring(currentData.avatar_url)
-
       views.admin.parent.setVisibility(currentData.is_admin and 0 or 8)
-      GlideUtil.set((function() if avatar:find("http") ~= nil then return avatar else return "https://luaappx.top/public/uploads/avatars/default_avatar.png" end end)(), views.icon, true)
+      GlideUtil.set(activity.getLuaDir("res/drawable/default_avatar.png"), views.icon, true)
 
       views.nick.setText(tostring(currentData.nickname))
       views.time.setText(tostring(currentData.created_at))
@@ -229,7 +225,7 @@ local function initAdapter(i)
       end
 
       function views.card.onClick(v)
-        ActivityUtil.new("details", { OkHttpUtil.cecode(currentData) })
+     --   MyToast("网络功能已移除")
       end
 
       activity.onLongClick(views.card, function()
@@ -265,84 +261,15 @@ local function initAdapter(i)
         .setItems(items, function(l, v)
           if items[v+1] == res.string.copy_header then
             activity.getSystemService("clipboard").setText(currentData.title)
-            MyToast(res.string.copied_successfully)
+          --  MyToast(res.string.copied_successfully)
            elseif items[v+1] == res.string.delete_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.delete_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-              OkHttpUtil.post(true, API_BASE_URL .. "delete_post.php", {
-                post_id = currentData.id,
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    refreshData(i)
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+         --   MyToast("网络功能已移除")
            elseif items[v+1] == res.string.modify_post then
-            ActivityUtil.new("post", { currentData.id })
+         --   MyToast("网络功能已移除")
            elseif items[v+1] == res.string.restore_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.restore_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-              OkHttpUtil.post(true, API_BASE_URL .. "restore_post.php", {
-                post_id = currentData.id,
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    refreshData(i)
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+          --  MyToast("网络功能已移除")
            elseif items[v+1] == res.string.off_the_shelf_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.remove_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-              OkHttpUtil.post(true, API_BASE_URL .. "remove_post.php", {
-                post_id = currentData.id,
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    refreshData(i)
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+        --    MyToast("网络功能已移除")
           end
         end)
         .show()
@@ -359,78 +286,9 @@ local function initAdapter(i)
   fadeInAnims[i].setDuration(250)
 end
 
--- 加载数据
+-- 加载数据（已移除网络功能）
 function loadData(tabIndex, isFirstLoad, keywor)
-  -- 添加终止条件，避免无效请求
-  if isLoadingList[tabIndex] or (not hasMoreList[tabIndex] and not isFirstLoad) then
-    swipeRefreshLayouts[tabIndex].setRefreshing(false)
-    return
-  end
-
-  isLoadingList[tabIndex] = true
-  swipeRefreshLayouts[tabIndex].setRefreshing(true)
-
-  local params = {
-    ["page"] = pageList[tabIndex],
-    ["page_size"] = 10,
-    ["keyword"] = keywor or "",
-    ["time"] = os.time()
-  }
-
-  -- 根据Tab类型设置参数
-  if PAGE_TYPES[tabIndex] == "my_posts" then
-    params["get_my_posts"] = 1
-   elseif PAGE_TYPES[tabIndex] == "purchased" then
-    params["get_my_purchased"] = 1
-   elseif PAGE_TYPES[tabIndex] == "favorites" then
-    params["get_my_favorites"] = 1
-   elseif PAGE_TYPES[tabIndex] == "removed" then
-    params["get_removed"] = 1 -- 新增的下架帖子参数
-  end
-
-  OkHttpUtil.post(false, API_BASE_URL .. "list_user_posts.php", params, {
-    ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-    }, function(code, body)
-
-    isLoadingList[tabIndex] = false
-    swipeRefreshLayouts[tabIndex].setRefreshing(false)
-
-    local success, response = pcall(OkHttpUtil.decode, body)
-    if success and response and response.data then
-      local newData = response.data
-
-      -- 确保数据更新到正确的标签页
-      if pageList[tabIndex] == 1 then
-        dataList[tabIndex] = newData
-
-        if dataHolders[tabIndex] then
-          dataHolders[tabIndex].data = dataList[tabIndex]
-        end
-
-        adapters[tabIndex].notifyDataSetChanged()
-        hasMoreList[tabIndex] = true
-
-        if fadeInAnims[tabIndex] then
-          fadeInAnims[tabIndex].start()
-        end
-        recyclerViews[tabIndex].alpha = 1
-
-       else
-        if newData and #newData > 0 then
-          for _, item in ipairs(newData) do
-            table.insert(dataList[tabIndex], item)
-          end
-          adapters[tabIndex].notifyDataSetChanged()
-         else
-          pageList[tabIndex] = pageList[tabIndex] - 1
-          hasMoreList[tabIndex] = false
-          --         MyToast(res.string.no_more_data)
-        end
-      end
-     else
-      -- MyToast(res.string.data_load_failed)
-    end
-  end)
+ -- MyToast("网络功能已移除")
 end
 
 -- 添加搜索文本监听（带防抖功能）
@@ -473,9 +331,8 @@ for i = 1, 4 do
   recyclerViews[i].alpha = 0
 end
 
--- 只加载第一个页面的数据
+-- 只加载第一个页面的数据（已移除网络功能）
 initializedTabs[1] = true
-loadData(1, true)
 
 -- 菜单项选择
 function onOptionsItemSelected(item)

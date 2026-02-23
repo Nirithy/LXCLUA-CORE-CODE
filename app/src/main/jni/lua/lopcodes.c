@@ -107,7 +107,7 @@ LUAI_DDEF const lu_byte luaP_opmodes[NUM_OPCODES] = {
  ,opmode(0, 0, 0, 0, 0, iABx)		/* OP_ERRNNIL */
  ,opmode(0, 0, 1, 0, 1, iABC)		/* OP_VARARGPREP */
  ,opmode(0, 0, 0, 1, 0, iABC)		/* OP_IS */
- ,opmode(0, 0, 0, 1, 0, iABC)		/* OP_TESTNIL */
+ ,opmode(0, 0, 0, 1, 1, iABC)		/* OP_TESTNIL */
  /* 面向对象系统操作码 */
  ,opmode(0, 0, 0, 0, 1, iABx)		/* OP_NEWCLASS */
  ,opmode(0, 0, 0, 0, 0, iABC)		/* OP_INHERIT */
@@ -130,6 +130,11 @@ LUAI_DDEF const lu_byte luaP_opmodes[NUM_OPCODES] = {
  ,opmode(0, 0, 0, 0, 0, iABC)		/* OP_LINKNAMESPACE */
  ,opmode(0, 0, 0, 0, 1, iABx)		/* OP_NEWSUPER */
  ,opmode(0, 0, 0, 0, 0, iABC)		/* OP_SETSUPER */
+ ,opmode(0, 0, 0, 0, 1, iABC)		/* OP_GETCMDS */
+ ,opmode(0, 0, 0, 0, 1, iABC)		/* OP_GETOPS */
+ ,opmode(0, 0, 0, 0, 1, iABC)		/* OP_ASYNCWRAP */
+ ,opmode(0, 0, 0, 0, 1, iABC)		/* OP_GENERICWRAP */
+ ,opmode(0, 0, 0, 0, 0, iABC)		/* OP_CHECKTYPE */
  ,opmode(0, 0, 0, 0, 0, iAx)		/* OP_EXTRAARG */
 };
 

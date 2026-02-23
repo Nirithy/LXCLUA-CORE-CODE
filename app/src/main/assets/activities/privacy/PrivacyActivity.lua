@@ -15,16 +15,12 @@ local AlphaAnimation = bindClass "android.view.animation.AlphaAnimation"
 local ColorStateList = bindClass "android.content.res.ColorStateList"
 local MaterialBlurDialogBuilder = require "dialogs.MaterialBlurDialogBuilder"
 local GlideUtil = require "utils.GlideUtil"
-local OkHttpUtil = require "utils.OkHttpUtil"
 local IconDrawable = require "utils.IconDrawable"
 local SharedPrefUtil = require "utils.SharedPrefUtil"
 local ActivityUtil = require "utils.ActivityUtil"
 local Utils = require "utils.Utils"
 user_id = tostring(tointeger(...))
 
-local API_BASE_URL = "https://luaappx.top/users/"
-local POSTS_API_URL = "https://luaappx.top/forum/"
-local ADMIN_BASE_URL = "https://luaappx.top/admin/"
 local data_code = {}
 local page_code = 1
 local isLoading = false
@@ -84,13 +80,7 @@ local function initRecycler()
       local currentData = data_code[position+1]
       local avatar = tostring(currentData.avatar_url)
       views.admin.parent.setVisibility(currentData.is_admin and 0 or 8)
-      GlideUtil.set((function()
-        if avatar:find("http") ~= nil then
-          return avatar
-         else
-          return "https://luaappx.top/public/uploads/avatars/default_avatar.png"
-        end
-      end)(), views.icon, true)
+      GlideUtil.set(activity.getLuaDir("res/drawable/default_avatar.png"), views.icon, true)
 
       views.nick.setText(tostring(currentData.nickname))
       views.time.setText(tostring(currentData.created_at))
@@ -110,7 +100,7 @@ local function initRecycler()
       end
 
       function views.card.onClick(v)
-        ActivityUtil.new("details", { OkHttpUtil.cecode(currentData) })
+     --   MyToast("网络功能已移除")
       end
 
       activity.onLongClick(views.card, function()
@@ -134,62 +124,13 @@ local function initRecycler()
         .setItems(items, function(l, v)
           if items[v+1] == res.string.copy_header then
             activity.getSystemService("clipboard").setText(currentData.title)
-            MyToast(res.string.copied_successfully)
+           -- MyToast(res.string.copied_successfully)
            elseif items[v+1] == res.string.delete_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.delete_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-              OkHttpUtil.post(true, POSTS_API_URL .. "delete_post.php", {
-                post_id = currentData.id,
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    refreshData()
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+           -- MyToast("网络功能已移除")
            elseif items[v+1] == res.string.modify_post then
-            ActivityUtil.new("post", { currentData.id })
+            --MyToast("网络功能已移除")
            elseif items[v+1] == res.string.off_the_shelf_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.remove_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-
-              OkHttpUtil.post(true, POSTS_API_URL .. "remove_post.php", {
-                post_id = currentData.id,
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    refreshData()
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+           -- MyToast("网络功能已移除")
           end
         end)
         .show()
@@ -209,50 +150,9 @@ local function initRecycler()
 
 end
 
--- 获取帖子数据
+-- 获取帖子数据（已移除网络功能）
 local function getPosts(page, isRefresh)
-  if isLoading then return end
-  isLoading = true
-
-  local url = POSTS_API_URL .. "list_posts.php?user_id=" .. user_id .. "&page=" .. page .. "&page_size=10"
-  if currentKeyword ~= "" then
-    url = url .. "&keyword=" .. currentKeyword
-  end
-  url = url .. "&time=" .. os.time()
-
-  OkHttpUtil.get(false, url, {
-    ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-    }, true, function(code, body)
-
-    isLoading = false
-    mSwipeRefreshLayout.setRefreshing(false)
-
-    local success, response = pcall(OkHttpUtil.decode, body)
-    if success and response and response.data then
-      local newData = response.data
-
-      if page == 1 then
-        data_code = newData or {}
-        adapter_code.notifyDataSetChanged()
-        hasMore = #newData > 0
-
-        if fadeInAnim then
-          fadeInAnim.start()
-        end
-        recycler_code.alpha = 1
-       else
-        if newData and #newData > 0 then
-          for _, item in ipairs(newData) do
-            table.insert(data_code, item)
-          end
-          adapter_code.notifyDataSetChanged()
-         else
-          page_code = page_code - 1
-          hasMore = false
-        end
-      end
-    end
-  end)
+  --MyToast("网络功能已移除")
 end
 
 local function refreshBannedChip()
@@ -264,67 +164,9 @@ local function refreshBannedChip()
   or IconDrawable("ic_account_outline", Colors.colorOnBackground))
 end
 
--- 加载用户信息
+-- 加载用户信息（已移除网络功能）
 local function getProfile()
-  OkHttpUtil.get(false, API_BASE_URL .. "get_profile.php?userid=" .. user_id .. "&time=" .. os.time(), nil, true, function(code, body)
-    local success, v = pcall(OkHttpUtil.decode, body)
-    if not (success and v and v.success) then
-      MyToast(v and v.message or body)
-      return
-    end
-    local isAdmin = SharedPrefUtil.getBoolean("is_admin")
-    local myUserId = SharedPrefUtil.getNumber("user_id")
-    is_banned2 = v.data.is_banned
-
-    local avatar = tostring(v.data.avatar_url)
-    GlideUtil.set((function()
-      if avatar:find("http") ~= nil then
-        return avatar
-       else
-        return "https://luaappx.top/public/uploads/avatars/default_avatar.png"
-      end
-    end)(), logo, true)
-    nick.setText(tostring(v.data.nickname))
-    price.setText(tostring(tointeger(v.data.x_coins)) .. " " .. res.string.x_coin)
-    member_since.setText(tostring(v.data.member_since))
-    if v.data.is_banned then
-      is_banned.setVisibility(0)
-      title.parent.setVisibility(0)
-      .setCardBackgroundColor(Utils.setColorAlpha(Colors.colorError, 20))
-      title.setText(res.string.ban)
-      .setTextColor(Colors.colorError)
-     else
-      title.parent.setVisibility(0)
-      title.setText(v.data.is_admin and res.string.administrator or v.data.title)      
-    end
-    if isAdmin then
-      email.parent.setVisibility(0)
-      email.setText(tostring(v.data.email))
-      --.setVisibility(0)
-      nick.setText(tostring(v.data.nickname) .. "(" .. tointeger(v.data.user_id) .. ")")
-      -- 点击事件
-      function is_banned.onClick()
-        is_banned2 = not is_banned2
-        OkHttpUtil.post(true, ADMIN_BASE_URL .. "api/ban_user.php", {
-          user_id = v.data.user_id,
-          ban = is_banned2,
-          time = os.time()
-          }, {
-          ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-          }, function (code, body)
-          local success, v = pcall(OkHttpUtil.decode, body)
-          if not (success and v and v.success) then
-            MyToast(v and v.message or body)
-            return
-          end
-          MyToast(v.message)
-          getProfile()
-          refreshBannedChip()
-        end)
-      end
-    end
-    refreshBannedChip()
-  end)
+  --MyToast("网络功能已移除")
 end
 
 -- 刷新数据
@@ -378,68 +220,7 @@ function searchPosts(keywor)
 end
 
 function onCreateOptionsMenu(menu)
-  -- 添加搜索菜单项
-  local searchItem = menu.add(0, 1, 0, res.string.search)
-  searchItem.setShowAsAction(2)
-
-  local searchView = luajava.newInstance("androidx.appcompat.widget.SearchView", activity)
-  searchItem.setActionView(searchView)
-
-  -- 为SearchView设置一个唯一的ID
-  searchView.setId(android.R.id.custom) -- 使用系统预定义的ID或生成新ID
-  searchItem.setActionView(searchView)
-
-  local searchAutoComplete = searchView.findViewById(AndroidX_R.id.search_src_text)
-  searchAutoComplete.setHint(res.string.search)
-
-  searchView.setOnQueryTextListener({
-    onQueryTextChange = function(newText)
-      searchPosts(newText)
-      return true
-    end
-  })
-
-  -- 原有赠送X币菜单项
-  menu.add(res.string.complimentary_x_coins)
-  .onMenuItemClick = function()
-    MaterialBlurDialogBuilder(activity)
-    .setTitle(res.string.complimentary_x_coins)
-    .setView(loadlayout({
-      LinearLayoutCompat,
-      layout_width = -1,
-      layout_height = -1,
-      {
-        Slider,
-        layout_width = -1,
-        layout_margin = "26dp",
-        layout_marginBottom = "8dp",
-        ValueTo = 200,
-        StepSize = 5,
-        Value = 0,
-        id = "slider",
-      },
-    }))
-    .setPositiveButton(res.string.ok, function()
-      OkHttpUtil.post(true, API_BASE_URL .. "transfer_coins.php", {
-        userid = user_id,
-        count = slider.getValue(),
-        time = os.time()
-        }, {
-        ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-        }, function (code, body)
-        local success, v = pcall(OkHttpUtil.decode, body)
-        if not (success and v and v.success) then
-          MyToast(v and v.message or body)
-          return
-        end
-
-        MyToast(v.message)
-        price.setText(tostring(tointeger(v.data.new_total_coins)) .. " " .. res.string.x_coin)
-      end)
-    end)
-    .show()
-  end
-
+  --MyToast("网络功能已移除")
 end
 
 function onOptionsItemSelected(item)

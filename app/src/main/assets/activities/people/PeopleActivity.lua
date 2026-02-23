@@ -10,7 +10,6 @@ local PopupRecyclerAdapter = bindClass "github.znzsofficial.adapter.PopupRecycle
 
 -- 加载工具库
 local GlideUtil = require "utils.GlideUtil"
-local OkHttpUtil = require "utils.OkHttpUtil"
 
 -- 数据存储
 local appData = {
@@ -80,33 +79,7 @@ if not activity.getSharedData("offline_mode") then
   initRecyclerView(recycler_view1, "contributors")
   initRecyclerView(recycler_view2, "donors")
 
-  -- 获取数据
-  OkHttpUtil.post(false, "https://luaappx.top/contributors_donors.php", nil, nil,
-  function(code, body)
-    if code ~= 200 then
-      return
-    end
-
-    local success, response = pcall(OkHttpUtil.decode, body)
-    if not success or not response then
-      return
-    end
-
-    -- 更新数据
-    if response.data then
-      appData.contributors = response.data.contributors or {}
-      appData.donors = response.data.donors or {}
-
-      -- 刷新适配器
-      if adapters.contributors then
-        adapters.contributors.notifyDataSetChanged()
-      end
-
-      if adapters.donors then
-        adapters.donors.notifyDataSetChanged()
-      end
-    end
-  end)
+ -- MyToast("网络功能已移除")
 end
 
 -- ===== 生命周期函数 =====

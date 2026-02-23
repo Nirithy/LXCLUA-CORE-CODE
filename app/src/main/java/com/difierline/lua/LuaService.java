@@ -544,6 +544,22 @@ public class LuaService extends Service implements LuaContext,LuaBroadcastReceiv
 		L.setField(-2, "luapath");
 		L.pop(1);
 
+		// 初始化 JavaScript 引擎并注册到 Lua
+		JavaScriptEngine jsEngine = new JavaScriptEngine(this);
+		L.pushJavaObject(jsEngine);
+		L.setGlobal("javascript");
+		// 也注册为 js 别名
+		L.getGlobal("javascript");
+		L.setGlobal("js");
+
+		// 初始化 AI 引擎并注册到 Lua
+		AIEngine aiEngine = new AIEngine(this);
+		L.pushJavaObject(aiEngine);
+		L.setGlobal("ai");
+		// 也注册为 ai 别名（保持一致）
+		L.getGlobal("ai");
+		L.setGlobal("ai");
+
 		JavaFunction assetLoader = new LuaAssetLoader(this, L);
 
 		L.getGlobal("package");

@@ -14,8 +14,6 @@ local FileUtil = require "utils.FileUtil"
 local PathUtil = require "utils.PathUtil"
 local Utils = require "utils.Utils"
 local cjson = require "cjson"
-local OkHttpUtil = require "utils.OkHttpUtil"
-local UpdateUtil = require "utils.UpdateUtil"
 local IconDrawable = require "utils.IconDrawable"
 local SharedPrefUtil = require "utils.SharedPrefUtil"
 
@@ -26,7 +24,6 @@ ShareFragment = require "fragments.ShareFragment"
 MyFragment = require "fragments.MyFragment"
 
 -- 常量定义
-local API_BASE_URL = "https://luaappx.top/users/"
 local TEXT_FORMATS = { zip = true, alp = true }
 local MENU_ITEMS = {
   { title = res.string.item },
@@ -197,11 +194,8 @@ FileUtil.createDirectory(PathUtil.bin_path)
 FileUtil.createDirectory(PathUtil.cache_path)
 FileUtil.createDirectory(PathUtil.plugins_path)
 
--- 模块初始化
-UpdateUtil.check()
-StatService()
-.setAppKey("16494913a7")
-.start(activity)
+-- 模块初始化（已移除网络功能）
+
 
 -- 界面初始化
 initBottomNavigation()
@@ -463,24 +457,7 @@ function onActivityResult(requestCode, resultCode, intent)
   if not intent then return end
   local uri = intent.data
   if requestCode == 11 then
-    local path = Utils.uri2path(uri)
-    OkHttpUtil.upload(true, API_BASE_URL .. "set_avatar.php", {
-      time = os.time()
-      }, {
-      avatar = path,
-      }, {
-      ["Authorization"] = "Bearer " .. getSQLite(3),
-      ["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-      ["Content-Type"] = "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW",
-      }, function (code, body)
-      local success, v = pcall(OkHttpUtil.decode, body)
-      if success and v then
-        MyToast(v.message)
-        MyFragment.getProfile()
-       else
-        OkHttpUtil.print(body)
-      end
-    end)
+ --   MyToast("网络功能已移除")
    elseif requestCode == 2 then
     local path = Utils.uri2path(uri)
     local ext = FileUtil.getFileExtension(path)
@@ -489,26 +466,6 @@ function onActivityResult(requestCode, resultCode, intent)
       return
     end
     imposts(path)
-   elseif requestCode == 1726 and resultCode == -1 then
-    local extras = intent.getExtras()
-    local response = extras and extras.getString("key_response")
-
-    if response then
-      local ok, result = pcall(OkHttpUtil.decode, response)
-      if not ok or not result then return end
-
-      OkHttpUtil.post(true, "https://luaappx.top/account/binding.php", {
-        username = getSQLite(1),
-        password = getSQLite(2),
-        openid = result.openid
-        }, nil, function (code, body)
-        local success, v = pcall(OkHttpUtil.decode, body)
-        if success and v then
-          MyToast(v.message)
-          MyFragment.getProfile()
-        end
-      end)
-    end
   end
 end
 
@@ -569,33 +526,3 @@ function onDestroy()
   collectgarbage("step")
 end
 
---[[OkHttpUtil.post(false, "https://luaappx.top/admin/add_xcoins_all.php",
-{
-  amount = "-200",
-  include_usernames = {
-    --"SMTPTX",
-    
-    },
-  time = os.time()
-  },
-{
-  ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-},
-function (code, body)
-  OkHttpUtil.print(body)
-end)]]
-
-
---[[OkHttpUtil.upload(true,
-"https://tp.withtool.dpdns.org/upload",
-{
-  time = os.time()
-},
-{
-  file = "/storage/emulated/0/MT2/apks/LXCLUA_3.4.3.APK"
-},
-{
-},
-function(code, body)
-  print(body)
-end)]]

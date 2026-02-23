@@ -11,13 +11,11 @@ local ObjectAnimator = bindClass "android.animation.ObjectAnimator"
 local ProgressMaterialAlertDialog = require "dialogs.ProgressMaterialAlertDialog"
 local MaterialBlurDialogBuilder = require "dialogs.MaterialBlurDialogBuilder"
 local LuaRecyclerAdapter = require "utils.LuaRecyclerAdapter"
---local MarkDownUtil = require "utils.MarkDownUtil"
 local PathUtil = require "utils.PathUtil"
 local FileUtil = require "utils.FileUtil"
 local Utils = require "utils.Utils"
 local GlideUtil = require "utils.GlideUtil"
 local IconDrawable = require "utils.IconDrawable"
-local OkHttpUtil = require "utils.OkHttpUtil"
 
 -- 常量定义
 local VIEW_VISIBLE = 0
@@ -288,57 +286,12 @@ function onOptionsItemSelected(item)
   end
 end
 
--- 创建菜单
+-- 创建菜单（已移除网络功能）
 function onCreateOptionsMenu(menu)
   menu.add(res.string.import_template)
   .onMenuItemClick = function()
-    activity.startActivityForResult(
-    Intent(Intent.ACTION_GET_CONTENT)
-    .setType("*/*")
-    .addCategory(Intent.CATEGORY_OPENABLE),
-    2
-    )
+  --  MyToast("网络功能已移除")
   end
-
-  local menu1 = menu.addSubMenu(res.string.official_template)
-
-  OkHttpUtil.post(false, "https://luaappx.top/templates/api/get_templates.php", {
-    time = os.time()
-    }, nil, function (code, body)
-    local success, v = pcall(OkHttpUtil.decode, body)
-    if success and v then
-      for k, v in pairs(v.templates) do
-        local filename = FileUtil.getFileNameWithoutExt(tostring(v.filename))
-        menu1.add(filename)
-        .onMenuItemClick = function()
-          MaterialBlurDialogBuilder(activity)
-          .setTitle(res.string.tip)
-          .setMessage((res.string.official_template_tip):format(filename))
-          .setPositiveButton(res.string.ok, function()
-            OkHttpUtil.download(
-            true,
-            v.link,
-            PathUtil.templates_path .. "/" .. filename .. ".zip",
-            nil,
-            function(code, message)
-              if code == 200 then
-                MyToast(res.string.download_successful)
-                getList()
-               else
-                MyToast(res.string.download_failed .. "." .. message)
-                getList()
-              end
-              dialog_okhttp3.dismiss()
-            end
-            )
-          end)
-          .setNegativeButton(res.string.no, nil)
-          .show()
-        end
-      end
-    end
-  end)
-
 end
 
 -- 清理资源

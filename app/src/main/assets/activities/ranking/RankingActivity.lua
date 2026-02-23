@@ -8,23 +8,17 @@ local ObjectAnimator = bindClass "android.animation.ObjectAnimator"
 local RecyclerView = bindClass "androidx.recyclerview.widget.RecyclerView"
 local LuaCustRecyclerHolder = bindClass "github.znzsofficial.adapter.LuaCustRecyclerHolder"
 local PopupRecyclerAdapter = bindClass "github.znzsofficial.adapter.PopupRecyclerAdapter"
-local Handler = bindClass "android.os.Handler"
-local Runnable = bindClass "java.lang.Runnable"
 
 -- 加载工具库
 local Utils = require "utils.Utils"
-local OkHttpUtil = require "utils.OkHttpUtil"
 local GlideUtil = require "utils.GlideUtil"
 local ActivityUtil = require "utils.ActivityUtil"
 
--- 常量配置
-local API_BASE_URL = "https://luaappx.top/users/"
 
 -- 全局变量
 local data = {}
 local adapter
 local current_user_rank
-local refreshLock = false -- 刷新锁
 
 -- ===== 辅助函数 =====
 -- 初始化RecyclerView
@@ -54,10 +48,9 @@ local function initRecyclerView()
       local currentData = data[position + 1]
 
       if currentData then
-        -- 头像加载
+        -- 头像加载（已移除网络功能）
         local avatar = tostring(currentData.avatar_url)
-        GlideUtil.set(avatar:find("http") and avatar or
-        "https://luaappx.top/public/uploads/avatars/default_avatar.png", views.avatar, true)
+        GlideUtil.set(activity.getLuaDir("res/drawable/default_avatar.png"), views.avatar, true)
 
         -- 排名显示
         views.rank.setText(tostring(tointeger(currentData.rank)))
@@ -115,42 +108,14 @@ local function initRecyclerView()
   .start()
 end
 
--- 加载排行榜数据
+-- 加载排行榜数据（已移除网络功能）
 local function loadRankingData()
   -- 显示加载状态
   recycler_view.setVisibility(8)
-
-  OkHttpUtil.post(false, API_BASE_URL .. "wealth_ranking.php", {
-    time = os.time()
-    }, {
-    ["Authorization"] = "Bearer " .. getSQLite(3)
-    }, function(code, body)
-    -- 停止刷新动画
-    mSwipeRefreshLayout.setRefreshing(false)
-
-    local success, response = pcall(OkHttpUtil.decode, body)
-    if success and response and response.data and response.data.ranking_list then
-      -- 清空旧数据
-      data = {}
-      current_user_rank = response.data.current_user_rank
-
-      -- 处理新数据
-      for _, item in ipairs(response.data.ranking_list) do
-        table.insert(data, item)
-      end
-
-      -- 刷新UI
-      if #data > 0 then
-        adapter.notifyDataSetChanged()
-        recycler_view.setVisibility(0)
-       else
-        recycler_view.setVisibility(8)
-      end
-    end
-  end)
+ -- MyToast("网络功能已移除")
 end
 
--- 初始化下拉刷新
+-- 初始化下拉刷新（已移除网络功能）
 local function initSwipeRefresh()
   mSwipeRefreshLayout
   .setProgressViewOffset(true, -100, 250)
@@ -158,18 +123,7 @@ local function initSwipeRefresh()
   .setProgressBackgroundColorSchemeColor(Colors.colorSurface)
   .setOnRefreshListener({
     onRefresh = function()
-      -- 防抖机制，避免频繁刷新
-      if not refreshLock then
-        refreshLock = true
-        loadRankingData()
-
-        -- 1.5秒后解锁刷新
-        Handler().postDelayed(Runnable({
-          run = function() refreshLock = false end
-        }), 1500)
-       else
-        mSwipeRefreshLayout.setRefreshing(false)
-      end
+      mSwipeRefreshLayout.setRefreshing(false)
     end
   })
 end

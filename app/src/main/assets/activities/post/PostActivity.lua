@@ -18,7 +18,6 @@ local Slider = bindClass "com.google.android.material.slider.Slider"
 -- 加载工具库
 local MaterialBlurDialogBuilder = require "dialogs.MaterialBlurDialogBuilder"
 local Utils = require "utils.Utils"
-local OkHttpUtil = require "utils.OkHttpUtil"
 local ActivityUtil = require "utils.ActivityUtil"
 local IconDrawable = require "utils.IconDrawable"
 local FileUtil = require "utils.FileUtil"
@@ -26,8 +25,6 @@ local EditorUtil = require "activities.editor.EditorUtil"
 local Init = require "activities.editor.EditorActivity$init"
 EditView = require "activities.editor.EditView"
 
--- 常量配置
-local API_BASE_URL = "https://luaappx.top/forum/"
 local TEXT_FORMATS = { zip = true, alp = true }
 local MENU_ITEMS = {
   { id = "undo", icon = "ic_undo", action = function() editor.undo() end },
@@ -55,17 +52,9 @@ local function loadForums(data)
   end
 end
 
--- 获取论坛列表
+-- 获取论坛列表（已移除网络功能）
 local function fetchForums(callback)
-  OkHttpUtil.get(false, API_BASE_URL .. "list_forums.php?time=" .. os.time(), nil, true, function(code, body)
-    if code == 200 then
-      local success, v = pcall(OkHttpUtil.decode, body)
-      if success and v and v.data then
-        loadForums(v.data)
-        callback()
-      end
-    end
-  end)
+ -- MyToast("网络功能已移除")
 end
 
 -- 加载帖子内容
@@ -168,7 +157,7 @@ task(1, function()
   .EditorFont()
 end)
 
--- 获取论坛列表
+-- 获取论坛列表（已移除网络功能）
 fetchForums(function()
   if post_id then
     loadPost()

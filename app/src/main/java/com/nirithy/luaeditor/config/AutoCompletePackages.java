@@ -33,7 +33,13 @@ public final class AutoCompletePackages {
             "abstract", "class", "extends", "final", "implements", "interface", "new",
             "super", "superstruct", "private", "protected", "public", "static", "struct", "concept", "namespace",
             // 类型关键字
-            "bool", "char", "double", "float", "int", "long", "void", "asm", "using", "requires");
+            "bool", "char", "double", "float", "int", "long", "void", "asm", "using", "requires",
+             // 伪指令
+             "$include", "$alias", "$define", "$if", "$else", "$elseif", "$end", "$haltcompiler", "$type", "$declare",
+             // 内联汇编伪指令
+             "comment", "rem", "COMMENT", "REM", "nop", "raw", "emit", "jmpx", "JMPX", "align", "def", "define",
+             "newreg", "getglobal", "setglobal", "_print", "asmprint", "_assert", "asmassert", "_info", "asminfo",
+             "db", "dw", "dd", "str", "rep", "repeat", "junk", "garbage", "_if", "asmif", "_else", "asmelse", "_endif", "asmend");
 
     public static final Map<String, List<String>> DEFAULT_PACKAGES = new HashMap<String, List<String>>() {
         {

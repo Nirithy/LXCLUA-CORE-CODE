@@ -22,7 +22,6 @@ local PluginsUtil = require "activities.plugins.PluginsUtil"
 local IconDrawable = require "utils.IconDrawable"
 local MaterialBlurDialogBuilder = require "dialogs.MaterialBlurDialogBuilder"
 local SharedPrefUtil = require "utils.SharedPrefUtil"
-local OkHttpUtil = require "utils.OkHttpUtil"
 local GlideUtil = require "utils.GlideUtil"
 local Utils = require "utils.Utils"
 local ActivityUtil = require "utils.ActivityUtil"
@@ -31,9 +30,6 @@ local Init = require "activities.editor.EditorActivity$init"
 local LuaRecyclerAdapter = require "utils.LuaRecyclerAdapter"
 EditView = require "activities.editor.EditView"
 
--- 常量提取
-local API_BASE_URL = "https://luaappx.top/forum/"
-local DEFAULT_AVATAR_URL = "https://luaappx.top/public/uploads/avatars/default_avatar.png"
 local comments = {}
 local replyToCommentId, replyToUserId = "", ""
 local fadeInAnim = nil
@@ -590,37 +586,13 @@ EditView
 .EditorProperties()
 .EditorFont()
 
--- 按钮点击处理
+-- 按钮点击处理（已移除网络功能）
 star.parent.onClick = function()
-  if not SharedPrefUtil.getBoolean("is_login") then
-    MyToast(res.string.please_log_in_first)
-   else
-    OkHttpUtil.get(false, API_BASE_URL .. "favorite_post.php?post_id=" .. data.id .. "&time=" .. os.time(), headers, true, function(code, body)
-      local success, v = pcall(OkHttpUtil.decode, body)
-      if not (success and v and v.success) then
-        MyToast(v and v.message or body)
-        return
-      end
-
-      setState(star, v.data.is_favorited)
-    end)
-  end
+ -- MyToast("网络功能已移除")
 end
 
 thumb.parent.onClick = function()
-  if not SharedPrefUtil.getBoolean("is_login") then
-    MyToast(res.string.please_log_in_first)
-   else
-    OkHttpUtil.get(false, API_BASE_URL .. "like_post.php?post_id=" .. data.id .. "&time=" .. os.time(), headers, true, function(code, body)
-      local success, v = pcall(OkHttpUtil.decode, body)
-      if not (success and v and v.success) then
-        MyToast(v and v.message or body)
-        return
-      end
-
-      setState(thumb, v.data.is_liked)
-    end)
-  end
+--  MyToast("网络功能已移除")
 end
 
 file.onClick = function()
@@ -716,14 +688,6 @@ end
 -- 清理资源
 function onDestroy()
   EditView.release()
-
-  if OkHttpUtil.cancelAllRequests then
-    OkHttpUtil.cancelAllRequests()
-  end
-
-  if OkHttpUtil.cleanupDialogs then
-    OkHttpUtil.cleanupDialogs()
-  end
 
   adapter.release()
 

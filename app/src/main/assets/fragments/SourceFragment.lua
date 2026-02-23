@@ -8,7 +8,6 @@ local LuaCustRecyclerHolder = bindClass "github.znzsofficial.adapter.LuaCustRecy
 local PopupRecyclerAdapter = bindClass "github.znzsofficial.adapter.PopupRecyclerAdapter"
 local ArrayAdapter = bindClass "android.widget.ArrayAdapter"
 local SharedPrefUtil = require "utils.SharedPrefUtil"
-local OkHttpUtil = require "utils.OkHttpUtil"
 local GlideUtil = require "utils.GlideUtil"
 local Utils = require "utils.Utils"
 local ActivityUtil = require "utils.ActivityUtil"
@@ -21,7 +20,6 @@ local AlphaAnimation = bindClass "android.view.animation.AlphaAnimation"
 local AnimationUtils = bindClass "android.view.animation.AnimationUtils"
 local Android_R = bindClass "android.R"
 
-local API_BASE_URL = "https://luaappx.top/forum/"
 local forumData = nil
 -- 添加论坛数据映射表
 local forumDataMap = {}
@@ -87,7 +85,7 @@ local init_code = function()
       local currentData = data_code[position+1]
       local avatar = tostring(currentData.avatar_url)
       views.admin.parent.setVisibility(currentData.is_admin and 0 or 8)
-      GlideUtil.set((function() if avatar:find("http") ~= nil then return avatar else return "https://luaappx.top/public/uploads/avatars/default_avatar.png" end end)(), views.icon, true)
+      GlideUtil.set(activity.getLuaDir("res/drawable/default_avatar.png"), views.icon, true)
       views.nick.setText(tostring(currentData.nickname))
       xpcall(function()
         -- 使用映射表获取论坛名称
@@ -131,7 +129,7 @@ local init_code = function()
       end
 
       function views.card.onClick()
-        ActivityUtil.new("details", { OkHttpUtil.cecode(currentData) })
+     --   MyToast("网络功能已移除")
       end
 
       function views.icon.parent.parent.onClick()
@@ -154,63 +152,11 @@ local init_code = function()
             activity.getSystemService("clipboard").setText(currentData.title)
             MyToast(res.string.copied_successfully)
            elseif item[v+1] == res.string.delete_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.delete_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-
-              OkHttpUtil.post(true, "https://luaappx.top/forum/delete_post.php", {
-                post_id = tostring(currentData.id),
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    _M.refreshData()
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+           -- MyToast("网络功能已移除")
            elseif item[v+1] == res.string.modify_post then
-            ActivityUtil.new("post", { currentData.id })
+          --  MyToast("网络功能已移除")
            elseif item[v+1] == res.string.off_the_shelf_post then
-            MaterialBlurDialogBuilder(activity)
-            .setTitle(res.string.tip)
-            .setMessage((res.string.remove_post_tip):format(currentData.title))
-            .setPositiveButton(res.string.ok, function()
-
-              OkHttpUtil.post(true, API_BASE_URL .. "remove_post.php", {
-                post_id = currentData.id,
-                user_id = currentData.user_id,
-                time = os.time()
-                }, {
-                ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-                }, function (code, body)
-
-                local success, v = pcall(OkHttpUtil.decode, body)
-                if success and v then
-                  if v.success then
-                    _M.refreshData()
-                  end
-                  MyToast(v.message)
-                 else
-                  OkHttpUtil.error(body)
-                end
-              end)
-
-            end)
-            .setNegativeButton(res.string.no, nil)
-            .show()
+           -- MyToast("网络功能已移除")
           end
         end)
         .show()
@@ -250,159 +196,12 @@ function _M.refreshData()
 end
 
 function _M.getCode(id, page, isRefresh)
-  -- 如果论坛数据未加载，先加载论坛数据
-  if not forumData and not isLoadingForums then
-    isLoadingForums = true
-    pendingGetCodeRequest = {
-      id = id,
-      page = page,
-      isRefresh = isRefresh
-    },
-
-    OkHttpUtil.get(false, API_BASE_URL .. "list_forums.php?time=" .. os.time(), nil, true, function (code, body)
-      isLoadingForums = false
-
-      local success, v = pcall(OkHttpUtil.decode, body)
-      if success and v then
-        forumData = v.data
-        
-        -- 创建论坛ID到论坛数据的映射表
-        forumDataMap = {}
-        for _, forum in ipairs(forumData) do
-          forumDataMap[forum.id] = forum
-        end
-
-        -- 临时移除标签监听器以避免触发事件
-        if tabListener then
-          mtab_tag.removeOnTabSelectedListener(tabListener)
-        end
-
-        -- 重建标签栏
-        mtab_tag.removeAllTabs()
-        mtab_tag.addTab(mtab_tag.newTab().setText(res.string.all_categories).setTag(0))
-        for _, item in ipairs(forumData) do
-          mtab_tag.addTab(mtab_tag.newTab().setText(item.name).setTag(item.id))
-        end
-        Utils.setTabRippleEffect(mtab_tag)
-
-        -- 设置选中的标签（不会触发事件）
-        local targetTabIndex = 0
-        for i = 0, mtab_tag.getTabCount() - 1 do
-          if mtab_tag.getTabAt(i).getTag() == id then
-            targetTabIndex = i
-            break
-          end
-        end
-        mtab_tag.selectTab(mtab_tag.getTabAt(targetTabIndex))
-
-        -- 重新添加监听器
-        if tabListener then
-          mtab_tag.addOnTabSelectedListener(tabListener)
-        end
-      end
-
-      -- 执行缓存的请求
-      if pendingGetCodeRequest then
-        local req = pendingGetCodeRequest
-        pendingGetCodeRequest = nil
-        _M.getCode(req.id, req.page, req.isRefresh)
-      end
-    end)
-    return
-  end
-
-  -- 如果有未完成的论坛请求，存储当前请求
-  if not forumData and isLoadingForums then
-    pendingGetCodeRequest = {id = id, page = page, isRefresh = isRefresh}
-    return
-  end
-
-  -- 正常加载帖子数据
-  isLoading = true
-
-  OkHttpUtil.get(false, API_BASE_URL .. "list_posts.php?forum_id=" .. id .. "&page=" .. page .. "&page_size=10&keyword=" .. "&time=" .. os.time(),
-  {
-    ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-    }, true, function(code, body)
-
-    isLoading = false
-    local success, response = pcall(OkHttpUtil.decode, body)
-    --OkHttpUtil.print(body)
-    if mSwipeRefreshLayout2 then
-      mSwipeRefreshLayout2.setRefreshing(false)
-    end
-
-    if success and response and response.data then
-      local newData = response.data
-
-      if page == 1 then
-        data_code = newData or {}
-        recycler_code.adapter.notifyDataSetChanged()
-        hasMore = true
-
-        -- 播放列表加载完成动画
-        if fadeInAnim then
-          fadeInAnim.start()
-        end
-        recycler_code.alpha = 1 -- 恢复透明度
-       else
-        if newData and #newData > 0 then
-          for _, item in ipairs(newData) do
-            table.insert(data_code, item)
-          end
-          recycler_code.adapter.notifyDataSetChanged()
-         else
-          page_code = page_code - 1
-          hasMore = false
-        end
-      end
-    end
-  end)
+ -- MyToast("网络功能已移除")
 end
 
--- 专用搜索加载函数
+-- 专用搜索加载函数（已移除网络功能）
 function _M.loadSearchPage(keywor, page)
-  -- 添加搜索开始时的淡出效果（缩短时长）
-  local fadeOut = AlphaAnimation(1, 0.3)
-  fadeOut.setDuration(120) -- 减少30ms
-  recycler_code.startAnimation(fadeOut)
-
-  isLoading = true
-  local currentTabPosition = mtab_tag.getSelectedTabPosition()
-  local currentTab = mtab_tag.getTabAt(currentTabPosition)
-  local currentTag = currentTab and currentTab.getTag() or 0
-
-  -- 发起搜索请求
-  OkHttpUtil.get(false, API_BASE_URL .. "list_posts.php?forum_id=" .. currentTag .. "&page=" .. page .. "&page_size=10&keyword=" .. keywor .. "&time=" .. os.time(), {
-    ["Authorization"] = "Bearer " .. tostring(getSQLite(3))
-    }, true, function(code, body)
-    isLoading = false
-    local success, response = pcall(OkHttpUtil.decode, body)
-
-    if mSwipeRefreshLayout2 then
-      mSwipeRefreshLayout2.setRefreshing(false)
-    end
-
-    if success and response and response.data then
-      if page == 1 then
-        data_code = response.data or {}
-       else
-        -- 追加数据
-        for _, item in ipairs(response.data) do
-          table.insert(data_code, item)
-        end
-      end
-
-      recycler_code.adapter.notifyDataSetChanged()
-      hasMore = #response.data > 0
-
-      -- 播放列表加载完成动画
-      if fadeInAnim then
-        fadeInAnim.start()
-      end
-      recycler_code.alpha = 1 -- 恢复透明度
-    end
-  end)
+ -- MyToast("网络功能已移除")
 end
 
 function _M.search(newText)
@@ -494,25 +293,12 @@ function _M.onDestroy()
     tabListener = nil
   end
 
-  if OkHttpUtil.cancelAllRequests then
-    OkHttpUtil.cancelAllRequests()
-  end
-
-  if OkHttpUtil.cleanupDialogs then
-    OkHttpUtil.cleanupDialogs()
-  end
-
   -- 释放大对象
   data_code = {}
   forumData = nil
   forumDataMap = {}
   recycler_code.adapter.release()
   recycler_code.adapter = nil
-
-  -- 取消网络请求
-  if pendingGetCodeRequest then
-    pendingGetCodeRequest = nil
-  end
 
   -- 重置搜索状态
   isSearching = false
