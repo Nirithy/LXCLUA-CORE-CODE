@@ -763,50 +763,65 @@ int objectNewIndex(lua_State *L) {
 
 int gc(lua_State *L) {
     java_object *pObj;
+    jobject *pJobj;
     JNIEnv *javaEnv;
     if (!isJavaObject(L, 1)) {
         return 0;
     }
-    /* Gets the luaState index */
     jlong stateIndex = checkIndex(L);
 
-    pObj = (java_object *) lua_touserdata(L, 1);
-    lua_getmetatable(L, 1);
-    lua_pushnil(L);
-    lua_rawseti(L, -2, (long long) pObj);
-    lua_pop(L, 1);
+    if (luaL_testudata(L, 1, LUAJAVAOBJECTMETA) != NULL) {
+        pObj = (java_object *) lua_touserdata(L, 1);
+        lua_getmetatable(L, 1);
+        lua_pushnil(L);
+        lua_rawseti(L, -2, (long long) pObj);
+        lua_pop(L, 1);
 
-    /* Gets the JNI Environment */
-    javaEnv = checkEnv(L);
-    (*javaEnv)->CallStaticVoidMethod(javaEnv, luajava_api_class,
-                                     java_gc_method, stateIndex,
-                                     pObj->index);
+        javaEnv = checkEnv(L);
+        (*javaEnv)->CallStaticVoidMethod(javaEnv, luajava_api_class,
+                                         java_gc_method, stateIndex,
+                                         pObj->index);
+    } else {
+        pJobj = (jobject *) lua_touserdata(L, 1);
+        javaEnv = checkEnv(L);
+        if (pJobj != NULL && *pJobj != NULL) {
+            (*javaEnv)->DeleteGlobalRef(javaEnv, *pJobj);
+            *pJobj = NULL;
+        }
+    }
     checkError(javaEnv, L);
-    //*pObj = NULL;
     return 0;
 }
 
 int jclose(lua_State *L) {
     java_object *pObj;
+    jobject *pJobj;
     JNIEnv *javaEnv;
     if (!isJavaObject(L, 1)) {
         return 0;
     }
     jlong stateIndex = checkIndex(L);
 
-    pObj = (java_object *) lua_touserdata(L, 1);
-    lua_getmetatable(L, 1);
-    lua_pushnil(L);
-    lua_rawseti(L, -2, (long long) pObj);
-    lua_pop(L, 1);
+    if (luaL_testudata(L, 1, LUAJAVAOBJECTMETA) != NULL) {
+        pObj = (java_object *) lua_touserdata(L, 1);
+        lua_getmetatable(L, 1);
+        lua_pushnil(L);
+        lua_rawseti(L, -2, (long long) pObj);
+        lua_pop(L, 1);
 
-    /* Gets the JNI Environment */
-    javaEnv = checkEnv(L);
-    (*javaEnv)->CallStaticVoidMethod(javaEnv, luajava_api_class,
-                                     java_close_method, stateIndex,
-                                     pObj->index);
+        javaEnv = checkEnv(L);
+        (*javaEnv)->CallStaticVoidMethod(javaEnv, luajava_api_class,
+                                         java_close_method, stateIndex,
+                                         pObj->index);
+    } else {
+        pJobj = (jobject *) lua_touserdata(L, 1);
+        javaEnv = checkEnv(L);
+        if (pJobj != NULL && *pJobj != NULL) {
+            (*javaEnv)->DeleteGlobalRef(javaEnv, *pJobj);
+            *pJobj = NULL;
+        }
+    }
     checkError(javaEnv, L);
-    //*pObj = NULL;
     return 0;
 }
 
@@ -1153,30 +1168,40 @@ int asTable(lua_State *L) {
 int javaToString(lua_State *L) {
     jint ret;
     java_object *obj;
+    jobject *jobj;
     jlong stateIndex;
     JNIEnv *javaEnv;
 
-    /* Gets the luaState index */
     stateIndex = checkIndex(L);
 
-    /* Gets the java Object reference */
-    //obj = checkJavaObject(L, 1);
     if (!isJavaObject(L, 1)) {
         luaL_tolstring(L, 1, NULL);
         return 1;
     }
 
-    obj = (java_object *) lua_touserdata(L, 1);
-
-    /* Gets the JNI Environment */
-    javaEnv = checkEnv(L);
-
-    ret = (*javaEnv)->CallStaticIntMethod(
-            javaEnv, luajava_api_class, to_string_method, stateIndex, obj->index);
+    if (luaL_testudata(L, 1, LUAJAVAOBJECTMETA) != NULL) {
+        obj = (java_object *) lua_touserdata(L, 1);
+        javaEnv = checkEnv(L);
+        ret = (*javaEnv)->CallStaticIntMethod(
+                javaEnv, luajava_api_class, to_string_method, stateIndex, obj->index);
+    } else {
+        jobj = (jobject *) lua_touserdata(L, 1);
+        javaEnv = checkEnv(L);
+        if (jobj != NULL && *jobj != NULL) {
+            if ((*javaEnv)->IsInstanceOf(javaEnv, *jobj, java_function_class) == JNI_TRUE) {
+                lua_pushstring(L, "JavaFunction");
+            } else {
+                lua_pushfstring(L, "JavaObject: %p", (void *)*jobj);
+            }
+        } else {
+            lua_pushstring(L, "null");
+        }
+        ret = 1;
+    }
 
     checkError(javaEnv, L);
 
-    return 1;
+    return ret;
 }
 
 /***************************************************************************
@@ -1187,30 +1212,40 @@ int javaToString(lua_State *L) {
 int javaGetType(lua_State *L) {
     jint ret;
     java_object *obj;
+    jobject *jobj;
     jlong stateIndex;
     JNIEnv *javaEnv;
 
-    /* Gets the luaState index */
     stateIndex = checkIndex(L);
 
-    /* Gets the java Object reference */
-    //obj = checkJavaObject(L, 1);
     if (!isJavaObject(L, 1)) {
         luaL_tolstring(L, 1, NULL);
         return 1;
     }
 
-    obj = (java_object *) lua_touserdata(L, 1);
-
-    /* Gets the JNI Environment */
-    javaEnv = checkEnv(L);
-
-    ret = (*javaEnv)->CallStaticIntMethod(
-            javaEnv, luajava_api_class, get_type_method, stateIndex, obj->index);
+    if (luaL_testudata(L, 1, LUAJAVAOBJECTMETA) != NULL) {
+        obj = (java_object *) lua_touserdata(L, 1);
+        javaEnv = checkEnv(L);
+        ret = (*javaEnv)->CallStaticIntMethod(
+                javaEnv, luajava_api_class, get_type_method, stateIndex, obj->index);
+    } else {
+        jobj = (jobject *) lua_touserdata(L, 1);
+        javaEnv = checkEnv(L);
+        if (jobj != NULL && *jobj != NULL) {
+            if ((*javaEnv)->IsInstanceOf(javaEnv, *jobj, java_function_class) == JNI_TRUE) {
+                lua_pushstring(L, "function");
+            } else {
+                lua_pushstring(L, "userdata");
+            }
+        } else {
+            lua_pushstring(L, "nil");
+        }
+        ret = 1;
+    }
 
     checkError(javaEnv, L);
 
-    return 1;
+    return ret;
 }
 
 
