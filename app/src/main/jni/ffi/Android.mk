@@ -16,7 +16,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/../lua
 LOCAL_STATIC_LIBRARIES := LXCLuaCore
 
 LOCAL_CFLAGS := -DFFI_LITTLE_ENDIAN\
-               -mllvm -sobf -Wno-deprecated-declarations
+               -Wno-deprecated-declarations
 LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -llog -ldl \
                 -fstrict-aliasing \
 

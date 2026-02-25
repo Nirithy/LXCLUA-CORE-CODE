@@ -71,6 +71,7 @@ LOCAL_SRC_FILES := \
 	lsuper.c\
 	lstruct.c \
 	sha256.c \
+	ltcc.c\
 	lobfuscate.c
 
 LOCAL_CFLAGS += -DLUA_DL_DLOPEN -DLUA_COMPAT_MATHLIB -DLUA_COMPAT_MAXN -DLUA_COMPAT_MODULE

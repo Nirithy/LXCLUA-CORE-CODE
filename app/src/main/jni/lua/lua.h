@@ -1280,6 +1280,19 @@ LUA_API void (lua_closeslot) (lua_State *L, int idx);
  */
 LUA_API void (luaB_hotfix) (lua_State *L, int oldidx, int newidx);
 
+/*
+** tcc support functions
+*/
+LUA_API void  (lua_tcc_prologue) (lua_State *L, int nparams, int maxstack);
+LUA_API void  (lua_tcc_gettabup) (lua_State *L, int upval, const char *k, int dest);
+LUA_API void  (lua_tcc_settabup) (lua_State *L, int upval, const char *k, int val_idx);
+LUA_API void  (lua_tcc_loadk_str) (lua_State *L, int dest, const char *s);
+LUA_API void  (lua_tcc_loadk_int) (lua_State *L, int dest, lua_Integer v);
+LUA_API void  (lua_tcc_loadk_flt) (lua_State *L, int dest, lua_Number v);
+LUA_API int   (lua_tcc_in) (lua_State *L, int val_idx, int container_idx);
+LUA_API void  (lua_tcc_push_args) (lua_State *L, int start_reg, int count);
+LUA_API void  (lua_tcc_store_results) (lua_State *L, int start_reg, int count);
+
 
 /*
 ** {===================================================
@@ -1674,6 +1687,34 @@ struct lua_Debug {
 #define LUAI_TOSTRAUX(x)	#x
 #define LUAI_TOSTR(x)		LUAI_TOSTRAUX(x)
 
+
+/*
+** Object-Oriented API
+*/
+LUA_API void  (lua_newclass) (lua_State *L, const char *name);
+LUA_API void  (lua_inherit) (lua_State *L, int child_idx, int parent_idx);
+LUA_API void  (lua_newobject) (lua_State *L, int class_idx, int nargs);
+LUA_API void  (lua_setmethod) (lua_State *L, int class_idx, const char *name, int func_idx);
+LUA_API void  (lua_setstatic) (lua_State *L, int class_idx, const char *name, int value_idx);
+LUA_API void  (lua_getprop) (lua_State *L, int obj_idx, const char *key);
+LUA_API void  (lua_setprop) (lua_State *L, int obj_idx, const char *key, int value_idx);
+LUA_API int   (lua_instanceof) (lua_State *L, int obj_idx, int class_idx);
+LUA_API void  (lua_implement) (lua_State *L, int class_idx, int interface_idx);
+LUA_API void  (lua_getsuper) (lua_State *L, int obj_idx, const char *name);
+
+LUA_API int   (lua_spaceship) (lua_State *L, int idx1, int idx2);
+LUA_API int   (lua_is) (lua_State *L, int idx, const char *type_name);
+LUA_API void  (lua_checktype) (lua_State *L, int idx, const char *type_name);
+LUA_API void  (lua_newnamespace) (lua_State *L, const char *name);
+LUA_API void  (lua_linknamespace) (lua_State *L, int idx1, int idx2);
+LUA_API void  (lua_newsuperstruct) (lua_State *L, const char *name);
+LUA_API void  (lua_setsuper) (lua_State *L, int idx, int key_idx, int val_idx);
+LUA_API void  (lua_slice) (lua_State *L, int idx, int start_idx, int end_idx, int step_idx);
+LUA_API void  (lua_setifaceflag) (lua_State *L, int idx);
+LUA_API void  (lua_addmethod) (lua_State *L, int idx, const char *name, int nparams);
+LUA_API void  (lua_getcmds) (lua_State *L);
+LUA_API void  (lua_getops) (lua_State *L);
+LUA_API void  (lua_errnnil) (lua_State *L, int idx, const char *msg);
 
 
 /******************************************************************************
