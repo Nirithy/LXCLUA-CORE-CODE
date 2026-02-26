@@ -54,9 +54,16 @@ public final class AutoCompletePackages {
                      "output", "popen", "read", "readall", "readline", "readlines", "stderr", "stdin", "stdout", "tmpfile",
                      "type", "write", "writeline", "writelines"));
             put("luajava", Arrays.asList(
-                    "astable", "bindClass", "clear", "coding", "createArray", "createProxy",
-                    "getContext", "instanceof", "loadLib", "loaded", "luapath", "new", "newArray",
-                    "newInstance", "override", "package", "tostring"));
+                    "astable", "bindClass", "callDeclaredMethod", "callStatic",
+                    "clear", "coding", "createArray", "createProxy",
+                    "getClass", "getClassName", "getComponentType", "getConstructors",
+                    "getContext", "getDeclaredField", "getFields", "getInterfaces",
+                    "getMethods", "getObjectMethods", "getPackageName", "getSimpleName",
+                    "getStaticField", "getSuperclass",
+                    "hashCode", "importClass", "instanceof", "isArray", "isInterface",
+                    "isInstance", "isNull", "loadLib", "loaded", "luapath",
+                    "new", "newArray", "newInstance", "newInstance2", "override",
+                    "package", "setDeclaredField", "setStaticField", "tostring"));
             put("math", Arrays.asList(
                     "abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "cosh", "deg", "exp",
                     "floor", "fmod", "frexp", "huge", "ldexp", "log", "log10", "max", "maxinteger",
@@ -272,6 +279,44 @@ public final class AutoCompletePackages {
                 /* 其他 */
                 "getActionBar", "getSupportActionBar", "getWindow", "getResources",
                 "getSystemService", "getApplicationContext"));
+
+            put("bytecode", Arrays.asList(
+                /* 基础检查函数 */
+                "CheckFunction", "GetProto",
+
+                /* 代码操作函数 */
+                "GetCodeCount", "GetCode", "SetCode",
+                "GetLine", "GetParamCount",
+
+                /* 垃圾回收相关 */
+                "IsGC",
+
+                /* 指令操作函数 */
+                "GetOpCode", "GetArgs", "Make", "Dump",
+
+                /* 常量操作函数 */
+                "GetConstant", "GetConstants",
+
+                /* Upvalue操作函数 */
+                "GetUpvalue", "GetUpvalues",
+
+                /* 局部变量操作函数 */
+                "GetLocal", "GetLocals",
+
+                /* 嵌套Proto操作函数 */
+                "GetNestedProto", "GetNestedProtos",
+
+                /* 指令操作函数(表格式) */
+                "GetInstruction", "SetInstruction",
+
+                /* 锁操作函数 */
+                "Lock", "IsLocked",
+
+                /* 完整性检查函数 */
+                "MarkOriginal", "IsTampered",
+
+                /* OpCodes表(通过OpCodes字段访问) */
+                "OpCodes"));
 
         // AI引擎相关方法
         put("ai", Arrays.asList(

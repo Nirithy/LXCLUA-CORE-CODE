@@ -1964,5 +1964,539 @@ public final class LuaJavaAPI {
             return mObj;
         }
     }
+
+    /**
+     * 获取Java对象的Class对象
+     */
+    public static int javaGetClass(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = obj.getClass();
+            L.pushJavaObject(clazz);
+            return 1;
+        }
+    }
+
+    /**
+     * 获取Java对象的Class名称
+     */
+    public static int javaGetClassName(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null) {
+                L.pushNil();
+                return 1;
+            }
+            L.pushString(obj.getClass().getName());
+            return 1;
+        }
+    }
+
+    /**
+     * 检查Java对象是否为null
+     */
+    public static int javaIsNull(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            L.pushBoolean(obj == null);
+            return 1;
+        }
+    }
+
+    /**
+     * 获取Class的简单名称
+     */
+    public static int javaGetSimpleName(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            L.pushString(clazz.getSimpleName());
+            return 1;
+        }
+    }
+
+    /**
+     * 获取Class的包名
+     */
+    public static int javaGetPackageName(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            Package pkg = clazz.getPackage();
+            if (pkg != null) {
+                L.pushString(pkg.getName());
+            } else {
+                L.pushNil();
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 获取类的父类
+     */
+    public static int javaGetSuperclass(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            Class<?> superClass = clazz.getSuperclass();
+            if (superClass != null) {
+                L.pushJavaObject(superClass);
+            } else {
+                L.pushNil();
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 获取类实现的接口
+     */
+    public static int javaGetInterfaces(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            Class<?>[] interfaces = clazz.getInterfaces();
+            L.createTable(interfaces.length, 0);
+            for (int i = 0; i < interfaces.length; i++) {
+                L.pushJavaObject(interfaces[i]);
+                L.rawSetI(-2, i + 1);
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 检查Class是否为接口
+     */
+    public static int javaIsInterface(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushBoolean(false);
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            L.pushBoolean(clazz.isInterface());
+            return 1;
+        }
+    }
+
+    /**
+     * 检查Class是否为数组
+     */
+    public static int javaIsArray(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushBoolean(false);
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            L.pushBoolean(clazz.isArray());
+            return 1;
+        }
+    }
+
+    /**
+     * 获取数组的组件类型
+     */
+    public static int javaGetComponentType(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = null;
+            if (obj instanceof Class) {
+                clazz = (Class<?>) obj;
+            } else if (obj.getClass().isArray()) {
+                clazz = obj.getClass().getComponentType();
+            }
+            if (clazz != null) {
+                L.pushJavaObject(clazz);
+            } else {
+                L.pushNil();
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 调用类的静态方法
+     */
+    public static int javaCallStatic(LuaState L, String className, String methodName) throws LuaException {
+        synchronized (L) {
+            try {
+                Class<?> clazz = Class.forName(className);
+                int nargs = L.getTop() - 2;
+                Class<?>[] paramTypes = getParamTypes(L, 3, nargs);
+                Method method = clazz.getMethod(methodName, paramTypes);
+                Object[] args = getArgs(L, 3, nargs, paramTypes);
+                Object result = method.invoke(null, args);
+                if (result != null) {
+                    L.pushObjectValue(result);
+                } else {
+                    L.pushNil();
+                }
+                return 1;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 获取类的静态字段
+     */
+    public static int javaGetStaticField(LuaState L, String className, String fieldName) throws LuaException {
+        synchronized (L) {
+            try {
+                Class<?> clazz = Class.forName(className);
+                Field field = clazz.getField(fieldName);
+                Object value = field.get(null);
+                if (value != null) {
+                    L.pushObjectValue(value);
+                } else {
+                    L.pushNil();
+                }
+                return 1;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 设置类的静态字段
+     */
+    public static int javaSetStaticField(LuaState L, String className, String fieldName) throws LuaException {
+        synchronized (L) {
+            try {
+                Class<?> clazz = Class.forName(className);
+                Field field = clazz.getField(fieldName);
+                Object value = L.toJavaObject(3);
+                field.set(null, value);
+                return 0;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 获取类的所有公共方法
+     */
+    public static int javaGetMethods(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            Method[] methods = clazz.getMethods();
+            L.createTable(methods.length, 0);
+            for (int i = 0; i < methods.length; i++) {
+                L.pushString(methods[i].getName());
+                L.rawSetI(-2, i + 1);
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 获取类的所有公共字段
+     */
+    public static int javaGetFields(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            Field[] fields = clazz.getFields();
+            L.createTable(fields.length, 0);
+            for (int i = 0; i < fields.length; i++) {
+                L.pushString(fields[i].getName());
+                L.rawSetI(-2, i + 1);
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 获取类的所有构造函数
+     */
+    public static int javaGetConstructors(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null || !(obj instanceof Class)) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = (Class<?>) obj;
+            Constructor<?>[] constructors = clazz.getConstructors();
+            L.createTable(constructors.length, 0);
+            for (int i = 0; i < constructors.length; i++) {
+                L.pushString(constructors[i].toString());
+                L.rawSetI(-2, i + 1);
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * importClass - 类似Python的导入方式，返回Class对象
+     */
+    public static int javaImportClass(LuaState L, String className) throws LuaException {
+        synchronized (L) {
+            try {
+                Class<?> clazz = Class.forName(className);
+                L.pushJavaObject(clazz);
+                return 1;
+            } catch (ClassNotFoundException e) {
+                throw new LuaException("Class not found: " + className);
+            }
+        }
+    }
+
+    /**
+     * 创建对象并调用指定构造器
+     */
+    public static int javaNewWithConstructor(LuaState L, String className) throws LuaException {
+        synchronized (L) {
+            try {
+                Class<?> clazz = Class.forName(className);
+                int nargs = L.getTop() - 1;
+                Class<?>[] paramTypes = getParamTypes(L, 2, nargs);
+                Constructor<?> constructor = clazz.getConstructor(paramTypes);
+                Object[] args = getArgs(L, 2, nargs, paramTypes);
+                Object instance = constructor.newInstance(args);
+                L.pushJavaObject(instance);
+                return 1;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 获取对象的所有方法名
+     */
+    public static int javaGetObjectMethods(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null) {
+                L.pushNil();
+                return 1;
+            }
+            Class<?> clazz = obj.getClass();
+            Method[] methods = clazz.getMethods();
+            L.createTable(methods.length, 0);
+            for (int i = 0; i < methods.length; i++) {
+                L.pushString(methods[i].getName());
+                L.rawSetI(-2, i + 1);
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 获取对象的字段值（包含私有字段）
+     */
+    public static int javaGetDeclaredField(LuaState L, Object obj, String fieldName) throws LuaException {
+        synchronized (L) {
+            if (obj == null) {
+                L.pushNil();
+                return 1;
+            }
+            try {
+                Class<?> clazz = obj instanceof Class ? (Class<?>) obj : obj.getClass();
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                Object value = field.get(obj);
+                if (value != null) {
+                    L.pushObjectValue(value);
+                } else {
+                    L.pushNil();
+                }
+                return 1;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 设置对象的字段值（包含私有字段）
+     */
+    public static int javaSetDeclaredField(LuaState L, Object obj, String fieldName) throws LuaException {
+        synchronized (L) {
+            if (obj == null) {
+                return 0;
+            }
+            try {
+                Class<?> clazz = obj instanceof Class ? (Class<?>) obj : obj.getClass();
+                Field field = clazz.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                Object value = L.toJavaObject(3);
+                field.set(obj, value);
+                return 0;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 调用对象的私有方法
+     */
+    public static int javaCallDeclaredMethod(LuaState L, Object obj, String methodName) throws LuaException {
+        synchronized (L) {
+            if (obj == null) {
+                L.pushNil();
+                return 1;
+            }
+            try {
+                int nargs = L.getTop() - 2;
+                Class<?> clazz = obj instanceof Class ? (Class<?>) obj : obj.getClass();
+                Class<?>[] paramTypes = getParamTypes(L, 3, nargs);
+                Method method = clazz.getDeclaredMethod(methodName, paramTypes);
+                method.setAccessible(true);
+                Object[] args = getArgs(L, 3, nargs, paramTypes);
+                Object result = method.invoke(obj, args);
+                if (result != null) {
+                    L.pushObjectValue(result);
+                } else {
+                    L.pushNil();
+                }
+                return 1;
+            } catch (Exception e) {
+                throw new LuaException(e);
+            }
+        }
+    }
+
+    /**
+     * 检查对象是否是指定类的实例（更详细版本）
+     */
+    public static int javaIsInstance(LuaState L, Object obj, Object targetClass) throws LuaException {
+        synchronized (L) {
+            if (obj == null || targetClass == null || !(targetClass instanceof Class)) {
+                L.pushBoolean(false);
+                return 1;
+            }
+            Class<?> target = (Class<?>) targetClass;
+            L.pushBoolean(target.isInstance(obj));
+            return 1;
+        }
+    }
+
+    /**
+     * 获取对象的HashCode
+     */
+    public static int javaHashCode(LuaState L, int idx) throws LuaException {
+        synchronized (L) {
+            Object obj = L.toJavaObject(idx);
+            if (obj == null) {
+                L.pushInteger(0);
+            } else {
+                L.pushInteger(obj.hashCode());
+            }
+            return 1;
+        }
+    }
+
+    /**
+     * 获取Lua栈中参数的Java类型数组
+     * @param L LuaState对象
+     * @param startIdx 起始索引
+     * @param nargs 参数数量
+     * @return 参数类型数组
+     * @throws LuaException 如果获取对象失败
+     */
+    private static Class<?>[] getParamTypes(LuaState L, int startIdx, int nargs) throws LuaException {
+        Class<?>[] types = new Class<?>[nargs];
+        for (int i = 0; i < nargs; i++) {
+            int idx = startIdx + i;
+            int type = L.type(idx);
+            switch (type) {
+                case LuaState.LUA_TBOOLEAN:
+                    types[i] = boolean.class;
+                    break;
+                case LuaState.LUA_TNUMBER:
+                    if (L.isInteger(idx)) {
+                        types[i] = long.class;
+                    } else {
+                        types[i] = double.class;
+                    }
+                    break;
+                case LuaState.LUA_TSTRING:
+                    types[i] = String.class;
+                    break;
+                case LuaState.LUA_TTABLE:
+                    types[i] = Map.class;
+                    break;
+                case LuaState.LUA_TFUNCTION:
+                    types[i] = LuaFunction.class;
+                    break;
+                case LuaState.LUA_TUSERDATA:
+                case LuaState.LUA_TLIGHTUSERDATA:
+                    Object obj = L.toJavaObject(idx);
+                    if (obj != null) {
+                        types[i] = obj.getClass();
+                    } else {
+                        types[i] = Object.class;
+                    }
+                    break;
+                case LuaState.LUA_TNIL:
+                default:
+                    types[i] = Object.class;
+                    break;
+            }
+        }
+        return types;
+    }
+
+    /**
+     * 从Lua栈中获取参数值数组
+     * @param L LuaState对象
+     * @param startIdx 起始索引
+     * @param nargs 参数数量
+     * @param paramTypes 参数类型数组
+     * @return 参数值数组
+     * @throws LuaException 如果类型转换失败
+     */
+    private static Object[] getArgs(LuaState L, int startIdx, int nargs, Class<?>[] paramTypes) throws LuaException {
+        Object[] args = new Object[nargs];
+        for (int i = 0; i < nargs; i++) {
+            int idx = startIdx + i;
+            args[i] = compareTypes(L, paramTypes[i], idx);
+        }
+        return args;
+    }
 }
 

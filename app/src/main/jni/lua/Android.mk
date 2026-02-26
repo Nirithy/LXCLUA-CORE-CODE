@@ -18,6 +18,7 @@ LOCAL_SRC_FILES := \
     crc.c\
     lfs.c\
 	lapi.c \
+	lbytecode.c \
 	lauxlib.c \
 	lbigint.c\
 	lbaselib.c \

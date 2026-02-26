@@ -205,6 +205,9 @@ static void checkclosemth (lua_State *L, StkId level) {
 */
 static void prepcallclosemth (lua_State *L, StkId level, TStatus status,
                                             int yy) {
+  ptrdiff_t levelrel = savestack(L, level);
+  luaD_checkstack(L, 4);  /* ensure space for 'callclosemethod' */
+  level = restorestack(L, levelrel);
   TValue *uv = s2v(level);  /* value being closed */
   TValue *errobj;
   
@@ -343,12 +346,14 @@ Proto *luaF_newproto (lua_State *L) {
   f->upvalues = NULL;
   f->sizeupvalues = 0;
   f->numparams = 0;
+  f->flag = 0;
   f->is_vararg = 0;
   f->maxstacksize = 0;
   f->nodiscard = 0;
   f->difierline_mode = 0;
   f->difierline_magicnum = 0;
   f->difierline_data = 0;
+  f->bytecode_hash = 0;
   f->locvars = NULL;
   f->sizelocvars = 0;
   f->linedefined = 0;
@@ -513,4 +518,21 @@ int luaF_callqueuepop (lua_State *L, CallQueue *q, int *nargs, TValue *args) {
   
   luaM_free(L, node);
   return 1;
+}
+
+
+/**
+ * @brief Calculates the hash code of a function's bytecode.
+ *
+ * @param p The prototype.
+ * @return The hash code.
+ */
+uint64_t luaF_hashcode (const Proto *p) {
+  uint64_t h = 0xCBF29CE484222325ULL;
+  for (int i = 0; i < p->sizecode; i++) {
+    Instruction inst = p->code[i];
+    h ^= inst;
+    h *= 0x100000001B3ULL;
+  }
+  return h;
 }

@@ -676,13 +676,19 @@ public class LuaTextTokenizer {
             int currentOffset = this.offset;
             int currentLength = this.length;
 
-            // 检查是否超出边界
-            if (currentOffset + currentLength >= this.bufferLen) {
+            // 检查是否超出边界 - 使用 bufferLen 进行边界检查
+            if (currentOffset >= this.bufferLen || currentLength >= this.bufferLen || currentOffset + currentLength >= this.bufferLen) {
                 break;
             }
 
             // 获取下一个字符
-            char nextChar = charAt(currentOffset + currentLength);
+            char nextChar;
+            try {
+                nextChar = this.source.charAt(currentOffset + currentLength);
+            } catch (IndexOutOfBoundsException e) {
+                // 越界保护
+                break;
+            }
 
             // 检查是否是标识符的一部分
             if (!isIdentifierPart(nextChar)) {
@@ -692,6 +698,14 @@ public class LuaTextTokenizer {
             // 增加长度并更新节点
             this.length++;
             node = node == null ? null : (TrieTree.Node) node.map.get(nextChar);
+        }
+
+        // 安全检查：确保不超出缓冲区
+        if (identifierStart + this.length > this.bufferLen) {
+            this.length = this.bufferLen - identifierStart;
+        }
+        if (this.length < 0) {
+            this.length = 0;
         }
 
         // 获取标识符文本

@@ -79,10 +79,8 @@ local function MyBottomSheetDialog(context)
   return self
 end
 
-if Build.VERSION.SDK_INT >= 31 then
-  return MyBottomSheetDialog
- else
-  return function(context)
+
+return function(context)
     local dialog = BottomSheetDialog(context)
     return {
       setView = function(layout)
@@ -93,5 +91,4 @@ if Build.VERSION.SDK_INT >= 31 then
         return dialog
       end
     }
-  end
 end

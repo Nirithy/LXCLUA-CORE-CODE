@@ -1292,6 +1292,7 @@ LUA_API void  (lua_tcc_loadk_flt) (lua_State *L, int dest, lua_Number v);
 LUA_API int   (lua_tcc_in) (lua_State *L, int val_idx, int container_idx);
 LUA_API void  (lua_tcc_push_args) (lua_State *L, int start_reg, int count);
 LUA_API void  (lua_tcc_store_results) (lua_State *L, int start_reg, int count);
+LUA_API void  (lua_tcc_decrypt_string) (lua_State *L, const unsigned char *cipher, size_t len, unsigned int timestamp);
 
 
 /*
@@ -1676,6 +1677,8 @@ struct lua_Debug {
   int ntransfer;   /**< (r) number of transferred values */
   char short_src[LUA_IDSIZE]; /**< (S) Short source name */
   char ishotfixed;  /**< (h) whether function was hotfixed */
+  char islocked;    /**< (k) whether function is locked */
+  char istampered;  /**< (T) whether function is tampered */
   
   /* private part */
   struct CallInfo *i_ci;  /**< active function */

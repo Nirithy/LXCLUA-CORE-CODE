@@ -949,6 +949,11 @@ public class LuaIncrementalAnalyzeManager
                                 classNamePrevious = false;
                             } else if (previous == Tokens.DOT) {
                                 type = EditorColorScheme.IDENTIFIER_VAR;
+                            } else if (previous == Tokens.COLON) {
+                                // 处理 Lua 的 self 语法：obj:method() 
+                                // 在冒号后面的标识符是方法名
+                                type = EditorColorScheme.IDENTIFIER_VAR;
+                                classNamePrevious = true;
                             } else if (previous == Tokens.AT) {
                                 type = EditorColorScheme.ANNOTATION;
                             } else {
@@ -1067,6 +1072,7 @@ public class LuaIncrementalAnalyzeManager
                 case LONG_COMMENT_INCOMPLETE:
                 case WHITESPACE:
                 case NEWLINE:
+                case COLON:
                     break;
                 default:
                     previous = token;
@@ -1151,6 +1157,7 @@ public class LuaIncrementalAnalyzeManager
             case AND:
             case OR:
             case OP:
+            case COLON:
                 return true;
             default:
                 return false;
