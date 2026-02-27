@@ -2145,8 +2145,13 @@ public final class LuaJavaAPI {
 
     /**
      * 调用类的静态方法
+     * @param luaState Lua状态机指针
+     * @param className 类全名
+     * @param methodName 方法名
+     * @return 返回值数量
      */
-    public static int javaCallStatic(LuaState L, String className, String methodName) throws LuaException {
+    public static int javaCallStatic(long luaState, String className, String methodName) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             try {
                 Class<?> clazz = Class.forName(className);
@@ -2169,8 +2174,13 @@ public final class LuaJavaAPI {
 
     /**
      * 获取类的静态字段
+     * @param luaState Lua状态机指针
+     * @param className 类全名
+     * @param fieldName 字段名
+     * @return 返回值数量
      */
-    public static int javaGetStaticField(LuaState L, String className, String fieldName) throws LuaException {
+    public static int javaGetStaticField(long luaState, String className, String fieldName) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             try {
                 Class<?> clazz = Class.forName(className);
@@ -2190,8 +2200,13 @@ public final class LuaJavaAPI {
 
     /**
      * 设置类的静态字段
+     * @param luaState Lua状态机指针
+     * @param className 类全名
+     * @param fieldName 字段名
+     * @return 返回值数量
      */
-    public static int javaSetStaticField(LuaState L, String className, String fieldName) throws LuaException {
+    public static int javaSetStaticField(long luaState, String className, String fieldName) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             try {
                 Class<?> clazz = Class.forName(className);
@@ -2207,8 +2222,12 @@ public final class LuaJavaAPI {
 
     /**
      * 获取类的所有公共方法
+     * @param luaState Lua状态机指针
+     * @param idx 对象索引
+     * @return 返回值数量
      */
-    public static int javaGetMethods(LuaState L, int idx) throws LuaException {
+    public static int javaGetMethods(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             Object obj = L.toJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
@@ -2228,8 +2247,12 @@ public final class LuaJavaAPI {
 
     /**
      * 获取类的所有公共字段
+     * @param luaState Lua状态机指针
+     * @param idx 对象索引
+     * @return 返回值数量
      */
-    public static int javaGetFields(LuaState L, int idx) throws LuaException {
+    public static int javaGetFields(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             Object obj = L.toJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
@@ -2249,8 +2272,12 @@ public final class LuaJavaAPI {
 
     /**
      * 获取类的所有构造函数
+     * @param luaState Lua状态机指针
+     * @param idx 对象索引
+     * @return 返回值数量
      */
-    public static int javaGetConstructors(LuaState L, int idx) throws LuaException {
+    public static int javaGetConstructors(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             Object obj = L.toJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
@@ -2270,8 +2297,12 @@ public final class LuaJavaAPI {
 
     /**
      * importClass - 类似Python的导入方式，返回Class对象
+     * @param luaState Lua状态机指针
+     * @param className 要导入的类全名
+     * @return 返回值数量
      */
-    public static int javaImportClass(LuaState L, String className) throws LuaException {
+    public static int javaImportClass(long luaState, String className) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             try {
                 Class<?> clazz = Class.forName(className);
@@ -2285,8 +2316,12 @@ public final class LuaJavaAPI {
 
     /**
      * 创建对象并调用指定构造器
+     * @param luaState Lua状态机指针
+     * @param className 类全名
+     * @return 返回值数量
      */
-    public static int javaNewWithConstructor(LuaState L, String className) throws LuaException {
+    public static int javaNewWithConstructor(long luaState, String className) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             try {
                 Class<?> clazz = Class.forName(className);
@@ -2305,8 +2340,12 @@ public final class LuaJavaAPI {
 
     /**
      * 获取对象的所有方法名
+     * @param luaState Lua状态机指针
+     * @param idx 对象索引
+     * @return 返回值数量
      */
-    public static int javaGetObjectMethods(LuaState L, int idx) throws LuaException {
+    public static int javaGetObjectMethods(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             Object obj = L.toJavaObject(idx);
             if (obj == null) {
@@ -2326,8 +2365,13 @@ public final class LuaJavaAPI {
 
     /**
      * 获取对象的字段值（包含私有字段）
+     * @param luaState Lua状态机指针
+     * @param obj Java对象
+     * @param fieldName 字段名
+     * @return 返回值数量
      */
-    public static int javaGetDeclaredField(LuaState L, Object obj, String fieldName) throws LuaException {
+    public static int javaGetDeclaredField(long luaState, Object obj, String fieldName) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             if (obj == null) {
                 L.pushNil();
@@ -2352,8 +2396,13 @@ public final class LuaJavaAPI {
 
     /**
      * 设置对象的字段值（包含私有字段）
+     * @param luaState Lua状态机指针
+     * @param obj Java对象
+     * @param fieldName 字段名
+     * @return 返回值数量
      */
-    public static int javaSetDeclaredField(LuaState L, Object obj, String fieldName) throws LuaException {
+    public static int javaSetDeclaredField(long luaState, Object obj, String fieldName) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             if (obj == null) {
                 return 0;
@@ -2373,8 +2422,13 @@ public final class LuaJavaAPI {
 
     /**
      * 调用对象的私有方法
+     * @param luaState Lua状态机指针
+     * @param obj Java对象
+     * @param methodName 方法名
+     * @return 返回值数量
      */
-    public static int javaCallDeclaredMethod(LuaState L, Object obj, String methodName) throws LuaException {
+    public static int javaCallDeclaredMethod(long luaState, Object obj, String methodName) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             if (obj == null) {
                 L.pushNil();
@@ -2402,8 +2456,13 @@ public final class LuaJavaAPI {
 
     /**
      * 检查对象是否是指定类的实例（更详细版本）
+     * @param luaState Lua状态机指针
+     * @param obj Java对象
+     * @param targetClass 目标类
+     * @return 返回值数量
      */
-    public static int javaIsInstance(LuaState L, Object obj, Object targetClass) throws LuaException {
+    public static int javaIsInstance(long luaState, Object obj, Object targetClass) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             if (obj == null || targetClass == null || !(targetClass instanceof Class)) {
                 L.pushBoolean(false);
@@ -2417,8 +2476,12 @@ public final class LuaJavaAPI {
 
     /**
      * 获取对象的HashCode
+     * @param luaState Lua状态机指针
+     * @param idx 对象索引
+     * @return 返回值数量
      */
-    public static int javaHashCode(LuaState L, int idx) throws LuaException {
+    public static int javaHashCode(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
             Object obj = L.toJavaObject(idx);
             if (obj == null) {

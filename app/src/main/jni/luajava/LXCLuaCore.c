@@ -1505,7 +1505,7 @@ int javaCallStatic(lua_State *L) {
     jstring jClassName = (*javaEnv)->NewStringUTF(javaEnv, className);
     jstring jMethodName = (*javaEnv)->NewStringUTF(javaEnv, methodName);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaCallStatic", "(ILjava/lang/String;Ljava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaCallStatic", "(JLjava/lang/String;Ljava/lang/String;)I"),
         stateIndex, jClassName, jMethodName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jClassName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jMethodName);
@@ -1521,7 +1521,7 @@ int javaGetStaticField(lua_State *L) {
     jstring jClassName = (*javaEnv)->NewStringUTF(javaEnv, className);
     jstring jFieldName = (*javaEnv)->NewStringUTF(javaEnv, fieldName);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetStaticField", "(ILjava/lang/String;Ljava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetStaticField", "(JLjava/lang/String;Ljava/lang/String;)I"),
         stateIndex, jClassName, jFieldName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jClassName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jFieldName);
@@ -1537,7 +1537,7 @@ int javaSetStaticField(lua_State *L) {
     jstring jClassName = (*javaEnv)->NewStringUTF(javaEnv, className);
     jstring jFieldName = (*javaEnv)->NewStringUTF(javaEnv, fieldName);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaSetStaticField", "(ILjava/lang/String;Ljava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaSetStaticField", "(JLjava/lang/String;Ljava/lang/String;)I"),
         stateIndex, jClassName, jFieldName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jClassName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jFieldName);
@@ -1549,7 +1549,7 @@ int javaGetMethods(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetMethods", "(I)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetMethods", "(JI)I"),
         stateIndex, 1);
 }
 
@@ -1557,7 +1557,7 @@ int javaGetFields(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetFields", "(I)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetFields", "(JI)I"),
         stateIndex, 1);
 }
 
@@ -1565,7 +1565,7 @@ int javaGetConstructors(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetConstructors", "(I)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetConstructors", "(JI)I"),
         stateIndex, 1);
 }
 
@@ -1575,7 +1575,7 @@ int javaImportClass(lua_State *L) {
     const char *className = luaL_checkstring(L, 1);
     jstring jClassName = (*javaEnv)->NewStringUTF(javaEnv, className);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaImportClass", "(ILjava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaImportClass", "(JLjava/lang/String;)I"),
         stateIndex, jClassName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jClassName);
     checkError(javaEnv, L);
@@ -1588,7 +1588,7 @@ int javaNewWithConstructor(lua_State *L) {
     const char *className = luaL_checkstring(L, 1);
     jstring jClassName = (*javaEnv)->NewStringUTF(javaEnv, className);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaNewWithConstructor", "(ILjava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaNewWithConstructor", "(JLjava/lang/String;)I"),
         stateIndex, jClassName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jClassName);
     checkError(javaEnv, L);
@@ -1599,7 +1599,7 @@ int javaGetObjectMethods(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetObjectMethods", "(I)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetObjectMethods", "(JI)I"),
         stateIndex, 1);
 }
 
@@ -1614,7 +1614,7 @@ int javaGetDeclaredField(lua_State *L) {
     const char *fieldName = luaL_checkstring(L, 2);
     jstring jFieldName = (*javaEnv)->NewStringUTF(javaEnv, fieldName);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetDeclaredField", "(ILjava/lang/Object;Ljava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetDeclaredField", "(JLjava/lang/Object;Ljava/lang/String;)I"),
         stateIndex, obj->index, jFieldName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jFieldName);
     checkError(javaEnv, L);
@@ -1632,7 +1632,7 @@ int javaSetDeclaredField(lua_State *L) {
     const char *fieldName = luaL_checkstring(L, 2);
     jstring jFieldName = (*javaEnv)->NewStringUTF(javaEnv, fieldName);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaSetDeclaredField", "(ILjava/lang/Object;Ljava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaSetDeclaredField", "(JLjava/lang/Object;Ljava/lang/String;)I"),
         stateIndex, obj->index, jFieldName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jFieldName);
     checkError(javaEnv, L);
@@ -1650,7 +1650,7 @@ int javaCallDeclaredMethod(lua_State *L) {
     const char *methodName = luaL_checkstring(L, 2);
     jstring jMethodName = (*javaEnv)->NewStringUTF(javaEnv, methodName);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaCallDeclaredMethod", "(ILjava/lang/Object;Ljava/lang/String;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaCallDeclaredMethod", "(JLjava/lang/Object;Ljava/lang/String;)I"),
         stateIndex, obj->index, jMethodName);
     (*javaEnv)->DeleteLocalRef(javaEnv, jMethodName);
     checkError(javaEnv, L);
@@ -1667,7 +1667,7 @@ int javaIsInstance(lua_State *L) {
     java_object *obj = (java_object *) lua_touserdata(L, 1);
     java_object *targetClass = (java_object *) lua_touserdata(L, 2);
     jint ret = (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsInstance", "(ILjava/lang/Object;Ljava/lang/Object;)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsInstance", "(JLjava/lang/Object;Ljava/lang/Object;)I"),
         stateIndex, obj->index, targetClass->index);
     checkError(javaEnv, L);
     return ret;
@@ -1677,7 +1677,7 @@ int javaHashCode(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaHashCode", "(I)I"),
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaHashCode", "(JI)I"),
         stateIndex, 1);
 }
 
