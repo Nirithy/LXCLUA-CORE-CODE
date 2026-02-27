@@ -1968,9 +1968,10 @@ public final class LuaJavaAPI {
     /**
      * 获取Java对象的Class对象
      */
-    public static int javaGetClass(LuaState L, int idx) throws LuaException {
+    public static int javaGetClass(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null) {
                 L.pushNil();
                 return 1;
@@ -1984,9 +1985,10 @@ public final class LuaJavaAPI {
     /**
      * 获取Java对象的Class名称
      */
-    public static int javaGetClassName(LuaState L, int idx) throws LuaException {
+    public static int javaGetClassName(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null) {
                 L.pushNil();
                 return 1;
@@ -1999,9 +2001,10 @@ public final class LuaJavaAPI {
     /**
      * 检查Java对象是否为null
      */
-    public static int javaIsNull(LuaState L, int idx) throws LuaException {
+    public static int javaIsNull(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             L.pushBoolean(obj == null);
             return 1;
         }
@@ -2010,9 +2013,10 @@ public final class LuaJavaAPI {
     /**
      * 获取Class的简单名称
      */
-    public static int javaGetSimpleName(LuaState L, int idx) throws LuaException {
+    public static int javaGetSimpleName(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2026,9 +2030,10 @@ public final class LuaJavaAPI {
     /**
      * 获取Class的包名
      */
-    public static int javaGetPackageName(LuaState L, int idx) throws LuaException {
+    public static int javaGetPackageName(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2047,9 +2052,10 @@ public final class LuaJavaAPI {
     /**
      * 获取类的父类
      */
-    public static int javaGetSuperclass(LuaState L, int idx) throws LuaException {
+    public static int javaGetSuperclass(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2068,9 +2074,10 @@ public final class LuaJavaAPI {
     /**
      * 获取类实现的接口
      */
-    public static int javaGetInterfaces(LuaState L, int idx) throws LuaException {
+    public static int javaGetInterfaces(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2089,9 +2096,10 @@ public final class LuaJavaAPI {
     /**
      * 检查Class是否为接口
      */
-    public static int javaIsInterface(LuaState L, int idx) throws LuaException {
+    public static int javaIsInterface(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushBoolean(false);
                 return 1;
@@ -2105,9 +2113,10 @@ public final class LuaJavaAPI {
     /**
      * 检查Class是否为数组
      */
-    public static int javaIsArray(LuaState L, int idx) throws LuaException {
+    public static int javaIsArray(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushBoolean(false);
                 return 1;
@@ -2121,9 +2130,10 @@ public final class LuaJavaAPI {
     /**
      * 获取数组的组件类型
      */
-    public static int javaGetComponentType(LuaState L, int idx) throws LuaException {
+    public static int javaGetComponentType(long luaState, int idx) throws LuaException {
+        LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null) {
                 L.pushNil();
                 return 1;
@@ -2229,7 +2239,7 @@ public final class LuaJavaAPI {
     public static int javaGetMethods(long luaState, int idx) throws LuaException {
         LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2254,7 +2264,7 @@ public final class LuaJavaAPI {
     public static int javaGetFields(long luaState, int idx) throws LuaException {
         LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2279,7 +2289,7 @@ public final class LuaJavaAPI {
     public static int javaGetConstructors(long luaState, int idx) throws LuaException {
         LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null || !(obj instanceof Class)) {
                 L.pushNil();
                 return 1;
@@ -2347,7 +2357,7 @@ public final class LuaJavaAPI {
     public static int javaGetObjectMethods(long luaState, int idx) throws LuaException {
         LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null) {
                 L.pushNil();
                 return 1;
@@ -2483,7 +2493,7 @@ public final class LuaJavaAPI {
     public static int javaHashCode(long luaState, int idx) throws LuaException {
         LuaState L = LuaStateFactory.getExistingState(luaState);
         synchronized (L) {
-            Object obj = L.toJavaObject(idx);
+            Object obj = L.getJavaObject(idx);
             if (obj == null) {
                 L.pushInteger(0);
             } else {

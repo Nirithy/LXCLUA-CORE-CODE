@@ -48,7 +48,11 @@ public final class AutoCompletePackages {
             put("debug", Arrays.asList(
                     "debug", "gethook", "getinfo", "getlocal", "getmetatable", "getregistry",
                     "getupvalue", "getuservalue", "sethook", "setlocal", "setmetatable",
-                    "setupvalue", "setuservalue", "traceback", "upvalueid", "upvaluejoin"));
+                    "setupvalue", "setuservalue", "traceback", "upvalueid", "upvaluejoin",
+                    "setcstacklimit", "hotfix",
+                    "setbreakpoint", "removebreakpoint", "getbreakpoints", "enablebreakpoint", "clearbreakpoints",
+                    "continue", "step", "next", "finish",
+                    "setoutputcallback", "getoutputcallback"));
             put("io", Arrays.asList(
                      "close", "flush", "info", "input", "isdir", "linecount", "lines", "ls", "mkdir", "mmap", "munmap", "open",
                      "output", "popen", "read", "readall", "readline", "readlines", "stderr", "stdin", "stdout", "tmpfile",

@@ -1420,81 +1420,91 @@ int javaIsInstanceOf(lua_State *L) {
 int javaGetClass(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetClass", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetClass", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaGetClassName(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetClassName", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetClassName", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaIsNull(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsNull", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsNull", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaGetSimpleName(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetSimpleName", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetSimpleName", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaGetPackageName(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetPackageName", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetPackageName", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaGetSuperclass(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetSuperclass", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetSuperclass", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaGetInterfaces(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetInterfaces", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetInterfaces", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaIsInterface(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsInterface", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsInterface", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaIsArray(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsArray", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaIsArray", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaGetComponentType(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
-        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetComponentType", "(I)I"),
-        stateIndex, 1);
+        (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetComponentType", "(JI)I"),
+        stateIndex, obj->index);
 }
 
 int javaCallStatic(lua_State *L) {
@@ -1548,25 +1558,28 @@ int javaSetStaticField(lua_State *L) {
 int javaGetMethods(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
         (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetMethods", "(JI)I"),
-        stateIndex, 1);
+        stateIndex, obj->index);
 }
 
 int javaGetFields(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
         (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetFields", "(JI)I"),
-        stateIndex, 1);
+        stateIndex, obj->index);
 }
 
 int javaGetConstructors(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
         (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetConstructors", "(JI)I"),
-        stateIndex, 1);
+        stateIndex, obj->index);
 }
 
 int javaImportClass(lua_State *L) {
@@ -1598,9 +1611,10 @@ int javaNewWithConstructor(lua_State *L) {
 int javaGetObjectMethods(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
         (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaGetObjectMethods", "(JI)I"),
-        stateIndex, 1);
+        stateIndex, obj->index);
 }
 
 int javaGetDeclaredField(lua_State *L) {
@@ -1676,9 +1690,10 @@ int javaIsInstance(lua_State *L) {
 int javaHashCode(lua_State *L) {
     jlong stateIndex = checkIndex(L);
     JNIEnv *javaEnv = checkEnv(L);
+    java_object *obj = checkJavaObject(L, 1);
     return (*javaEnv)->CallStaticIntMethod(javaEnv, luajava_api_class, 
         (*javaEnv)->GetStaticMethodID(javaEnv, luajava_api_class, "javaHashCode", "(JI)I"),
-        stateIndex, 1);
+        stateIndex, obj->index);
 }
 
 static const luaL_Reg ljobjectmeta[] = {{"__index",    objectIndex},
