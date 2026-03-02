@@ -116,11 +116,13 @@ public class LuaState {
     }
 
     private long luaState;
+    private LuaJava luaJava;
 
     //private long stateId;
 
     protected LuaState() {
         luaState = _newstate();
+        luaJava = new LuaJava(this);
         //openLuajava(stateId);
         //this.stateId = luaState.getPeer();
     }
@@ -132,8 +134,17 @@ public class LuaState {
      */
     protected LuaState(long luaState) {
         this.luaState = luaState;
+        this.luaJava = new LuaJava(this);
         LuaStateFactory.insertLuaState(this);
         //openLuajava(stateId);
+    }
+    
+    /**
+     * 获取LuaJava实例
+     * @return LuaJava实例
+     */
+    public LuaJava getLuaJava() {
+        return luaJava;
     }
 
     /**
@@ -423,6 +434,11 @@ public class LuaState {
      * 返回格式: "行号:列号:错误信息"，如果没有错误则返回null
      */
     private synchronized native String _analyzeCode(long ptr, String code);
+
+    /**
+     * 解析Lua代码获取Proto信息，返回JSON格式的字节码结构
+     */
+    private synchronized native String _parseProto(long ptr, String code);
 
     private synchronized native void _openBase(long ptr);
 
@@ -872,6 +888,15 @@ public class LuaState {
      */
     public String analyzeCode(String code) {
         return _analyzeCode(luaState, code);
+    }
+
+    /**
+     * 解析Lua代码获取Proto信息，返回JSON格式的字节码结构
+     * @param code Lua代码
+     * @return JSON格式的Proto信息，包含指令、常量、子函数等
+     */
+    public String parseProto(String code) {
+        return _parseProto(luaState, code);
     }
     
     //IMPLEMENTED C MACROS

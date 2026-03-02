@@ -1,0 +1,959 @@
+/*
+ * 由LuaToJava自动生成
+ * 模块名: testmodule
+ * 生成时间: Mon Mar 02 10:37:28 GMT+08:00 2026
+ */
+
+import com.luajava.LuaJava;
+import com.luajava.LuaException;
+import com.luajava.CompiledFunction;
+
+public class TestCompiled implements CompiledFunction {
+
+    private int funcId;
+    private int vtabIdx;
+
+    private int function_0(LuaJava L) throws LuaException {
+        int _nargs = L.getTop();
+        vtabIdx = 1;
+        if (_nargs < 2) {
+            L.setTop(2);
+        }
+        // 处理可变参数
+        int _pc = 0;
+        while (true) {
+            switch (_pc) {
+                case 0: {
+                    // VARARGPREP
+                    // VARARGPREP pc=0 a=0 b=0 c=0 k=0
+        /* VARARGPREP: 调整可变参数 */
+                    _pc = 1; break;
+                }
+                case 1: {
+                    // CLOSURE
+                    // CLOSURE pc=1 a=0 b=0 c=0 k=0 sbx=-1073741823
+                    // CLOSURE: pc=1 bx=0 closureBx=0
+                    // 创建闭包: function_1 (sizeUpvalues=0)
+                    L.pushJavaFunction(this, "function_1", 0);
+                    L.replace(1);
+                    _pc = 2; break;
+                }
+                case 2: {
+                    // SETTABUP
+                    // SETTABUP pc=2 a=0 b=0 c=0 k=0
+                    L.rawGetI(LuaJava.LUA_REGISTRYINDEX, 2);
+                    L.pushValue(1);
+                    L.setField(-2, "get");
+                    L.pop(1);
+                    _pc = 3; break;
+                }
+                case 3: {
+                    // RETURN
+                    // RETURN pc=3 a=0 b=1 c=1 k=0
+                    return 0;
+                }
+                default: return 0;
+            }
+        }
+    }
+
+    private int function_1(LuaJava L) throws LuaException {
+        L.setTop(51);
+        int _pc = 0;
+        while (true) {
+            switch (_pc) {
+                case 0: {
+                    // NEWTABLE
+                    // NEWTABLE pc=0 a=0 b=0 c=0 k=0 vc=400
+                    L.createTable(0, 0);
+                    L.replace(1);
+                    _pc = 1; break;
+                }
+                case 1: {
+                    // LOADI
+                    // LOADI pc=2 a=1 b=0 c=0 k=0 bx=1073741824 sbx=1
+                    // LOADI: pc=2 a=1 sbx=1
+                    L.pushInteger(1);
+                    L.replace(2);
+                    _pc = 2; break;
+                }
+                case 2: {
+                    // LOADI
+                    // LOADI pc=3 a=2 b=0 c=0 k=0 bx=1073741825 sbx=2
+                    // LOADI: pc=3 a=2 sbx=2
+                    L.pushInteger(2);
+                    L.replace(3);
+                    _pc = 3; break;
+                }
+                case 3: {
+                    // LOADI
+                    // LOADI pc=4 a=3 b=0 c=0 k=0 bx=1073741826 sbx=3
+                    // LOADI: pc=4 a=3 sbx=3
+                    L.pushInteger(3);
+                    L.replace(4);
+                    _pc = 4; break;
+                }
+                case 4: {
+                    // LOADI
+                    // LOADI pc=5 a=4 b=0 c=0 k=0 bx=1073741827 sbx=4
+                    // LOADI: pc=5 a=4 sbx=4
+                    L.pushInteger(4);
+                    L.replace(5);
+                    _pc = 5; break;
+                }
+                case 5: {
+                    // LOADI
+                    // LOADI pc=6 a=5 b=0 c=0 k=0 bx=1073741828 sbx=5
+                    // LOADI: pc=6 a=5 sbx=5
+                    L.pushInteger(5);
+                    L.replace(6);
+                    _pc = 6; break;
+                }
+                case 6: {
+                    // LOADI
+                    // LOADI pc=7 a=6 b=0 c=0 k=0 bx=1073741829 sbx=6
+                    // LOADI: pc=7 a=6 sbx=6
+                    L.pushInteger(6);
+                    L.replace(7);
+                    _pc = 7; break;
+                }
+                case 7: {
+                    // LOADI
+                    // LOADI pc=8 a=7 b=0 c=0 k=0 bx=1073741830 sbx=7
+                    // LOADI: pc=8 a=7 sbx=7
+                    L.pushInteger(7);
+                    L.replace(8);
+                    _pc = 8; break;
+                }
+                case 8: {
+                    // LOADI
+                    // LOADI pc=9 a=8 b=0 c=0 k=0 bx=1073741831 sbx=8
+                    // LOADI: pc=9 a=8 sbx=8
+                    L.pushInteger(8);
+                    L.replace(9);
+                    _pc = 9; break;
+                }
+                case 9: {
+                    // LOADI
+                    // LOADI pc=10 a=9 b=0 c=0 k=0 bx=1073741832 sbx=9
+                    // LOADI: pc=10 a=9 sbx=9
+                    L.pushInteger(9);
+                    L.replace(10);
+                    _pc = 10; break;
+                }
+                case 10: {
+                    // LOADI
+                    // LOADI pc=11 a=10 b=0 c=0 k=0 bx=1073741833 sbx=10
+                    // LOADI: pc=11 a=10 sbx=10
+                    L.pushInteger(10);
+                    L.replace(11);
+                    _pc = 11; break;
+                }
+                case 11: {
+                    // LOADI
+                    // LOADI pc=12 a=11 b=0 c=0 k=0 bx=1073741834 sbx=11
+                    // LOADI: pc=12 a=11 sbx=11
+                    L.pushInteger(11);
+                    L.replace(12);
+                    _pc = 12; break;
+                }
+                case 12: {
+                    // LOADI
+                    // LOADI pc=13 a=12 b=0 c=0 k=0 bx=1073741835 sbx=12
+                    // LOADI: pc=13 a=12 sbx=12
+                    L.pushInteger(12);
+                    L.replace(13);
+                    _pc = 13; break;
+                }
+                case 13: {
+                    // LOADI
+                    // LOADI pc=14 a=13 b=0 c=0 k=0 bx=1073741836 sbx=13
+                    // LOADI: pc=14 a=13 sbx=13
+                    L.pushInteger(13);
+                    L.replace(14);
+                    _pc = 14; break;
+                }
+                case 14: {
+                    // LOADI
+                    // LOADI pc=15 a=14 b=0 c=0 k=0 bx=1073741837 sbx=14
+                    // LOADI: pc=15 a=14 sbx=14
+                    L.pushInteger(14);
+                    L.replace(15);
+                    _pc = 15; break;
+                }
+                case 15: {
+                    // LOADI
+                    // LOADI pc=16 a=15 b=0 c=0 k=0 bx=1073741838 sbx=15
+                    // LOADI: pc=16 a=15 sbx=15
+                    L.pushInteger(15);
+                    L.replace(16);
+                    _pc = 16; break;
+                }
+                case 16: {
+                    // LOADI
+                    // LOADI pc=17 a=16 b=0 c=0 k=0 bx=1073741839 sbx=16
+                    // LOADI: pc=17 a=16 sbx=16
+                    L.pushInteger(16);
+                    L.replace(17);
+                    _pc = 17; break;
+                }
+                case 17: {
+                    // LOADI
+                    // LOADI pc=18 a=17 b=0 c=0 k=0 bx=1073741840 sbx=17
+                    // LOADI: pc=18 a=17 sbx=17
+                    L.pushInteger(17);
+                    L.replace(18);
+                    _pc = 18; break;
+                }
+                case 18: {
+                    // LOADI
+                    // LOADI pc=19 a=18 b=0 c=0 k=0 bx=1073741841 sbx=18
+                    // LOADI: pc=19 a=18 sbx=18
+                    L.pushInteger(18);
+                    L.replace(19);
+                    _pc = 19; break;
+                }
+                case 19: {
+                    // LOADI
+                    // LOADI pc=20 a=19 b=0 c=0 k=0 bx=1073741842 sbx=19
+                    // LOADI: pc=20 a=19 sbx=19
+                    L.pushInteger(19);
+                    L.replace(20);
+                    _pc = 20; break;
+                }
+                case 20: {
+                    // LOADI
+                    // LOADI pc=21 a=20 b=0 c=0 k=0 bx=1073741843 sbx=20
+                    // LOADI: pc=21 a=20 sbx=20
+                    L.pushInteger(20);
+                    L.replace(21);
+                    _pc = 21; break;
+                }
+                case 21: {
+                    // LOADI
+                    // LOADI pc=22 a=21 b=0 c=0 k=0 bx=1073741844 sbx=21
+                    // LOADI: pc=22 a=21 sbx=21
+                    L.pushInteger(21);
+                    L.replace(22);
+                    _pc = 22; break;
+                }
+                case 22: {
+                    // LOADI
+                    // LOADI pc=23 a=22 b=0 c=0 k=0 bx=1073741845 sbx=22
+                    // LOADI: pc=23 a=22 sbx=22
+                    L.pushInteger(22);
+                    L.replace(23);
+                    _pc = 23; break;
+                }
+                case 23: {
+                    // LOADI
+                    // LOADI pc=24 a=23 b=0 c=0 k=0 bx=1073741846 sbx=23
+                    // LOADI: pc=24 a=23 sbx=23
+                    L.pushInteger(23);
+                    L.replace(24);
+                    _pc = 24; break;
+                }
+                case 24: {
+                    // LOADI
+                    // LOADI pc=25 a=24 b=0 c=0 k=0 bx=1073741847 sbx=24
+                    // LOADI: pc=25 a=24 sbx=24
+                    L.pushInteger(24);
+                    L.replace(25);
+                    _pc = 25; break;
+                }
+                case 25: {
+                    // LOADI
+                    // LOADI pc=26 a=25 b=0 c=0 k=0 bx=1073741848 sbx=25
+                    // LOADI: pc=26 a=25 sbx=25
+                    L.pushInteger(25);
+                    L.replace(26);
+                    _pc = 26; break;
+                }
+                case 26: {
+                    // LOADI
+                    // LOADI pc=27 a=26 b=0 c=0 k=0 bx=1073741849 sbx=26
+                    // LOADI: pc=27 a=26 sbx=26
+                    L.pushInteger(26);
+                    L.replace(27);
+                    _pc = 27; break;
+                }
+                case 27: {
+                    // LOADI
+                    // LOADI pc=28 a=27 b=0 c=0 k=0 bx=1073741850 sbx=27
+                    // LOADI: pc=28 a=27 sbx=27
+                    L.pushInteger(27);
+                    L.replace(28);
+                    _pc = 28; break;
+                }
+                case 28: {
+                    // LOADI
+                    // LOADI pc=29 a=28 b=0 c=0 k=0 bx=1073741851 sbx=28
+                    // LOADI: pc=29 a=28 sbx=28
+                    L.pushInteger(28);
+                    L.replace(29);
+                    _pc = 29; break;
+                }
+                case 29: {
+                    // LOADI
+                    // LOADI pc=30 a=29 b=0 c=0 k=0 bx=1073741852 sbx=29
+                    // LOADI: pc=30 a=29 sbx=29
+                    L.pushInteger(29);
+                    L.replace(30);
+                    _pc = 30; break;
+                }
+                case 30: {
+                    // LOADI
+                    // LOADI pc=31 a=30 b=0 c=0 k=0 bx=1073741853 sbx=30
+                    // LOADI: pc=31 a=30 sbx=30
+                    L.pushInteger(30);
+                    L.replace(31);
+                    _pc = 31; break;
+                }
+                case 31: {
+                    // LOADI
+                    // LOADI pc=32 a=31 b=0 c=0 k=0 bx=1073741854 sbx=31
+                    // LOADI: pc=32 a=31 sbx=31
+                    L.pushInteger(31);
+                    L.replace(32);
+                    _pc = 32; break;
+                }
+                case 32: {
+                    // LOADI
+                    // LOADI pc=33 a=32 b=0 c=0 k=0 bx=1073741855 sbx=32
+                    // LOADI: pc=33 a=32 sbx=32
+                    L.pushInteger(32);
+                    L.replace(33);
+                    _pc = 33; break;
+                }
+                case 33: {
+                    // LOADI
+                    // LOADI pc=34 a=33 b=0 c=0 k=0 bx=1073741856 sbx=33
+                    // LOADI: pc=34 a=33 sbx=33
+                    L.pushInteger(33);
+                    L.replace(34);
+                    _pc = 34; break;
+                }
+                case 34: {
+                    // LOADI
+                    // LOADI pc=35 a=34 b=0 c=0 k=0 bx=1073741857 sbx=34
+                    // LOADI: pc=35 a=34 sbx=34
+                    L.pushInteger(34);
+                    L.replace(35);
+                    _pc = 35; break;
+                }
+                case 35: {
+                    // LOADI
+                    // LOADI pc=36 a=35 b=0 c=0 k=0 bx=1073741858 sbx=35
+                    // LOADI: pc=36 a=35 sbx=35
+                    L.pushInteger(35);
+                    L.replace(36);
+                    _pc = 36; break;
+                }
+                case 36: {
+                    // LOADI
+                    // LOADI pc=37 a=36 b=0 c=0 k=0 bx=1073741859 sbx=36
+                    // LOADI: pc=37 a=36 sbx=36
+                    L.pushInteger(36);
+                    L.replace(37);
+                    _pc = 37; break;
+                }
+                case 37: {
+                    // LOADI
+                    // LOADI pc=38 a=37 b=0 c=0 k=0 bx=1073741860 sbx=37
+                    // LOADI: pc=38 a=37 sbx=37
+                    L.pushInteger(37);
+                    L.replace(38);
+                    _pc = 38; break;
+                }
+                case 38: {
+                    // LOADI
+                    // LOADI pc=39 a=38 b=0 c=0 k=0 bx=1073741861 sbx=38
+                    // LOADI: pc=39 a=38 sbx=38
+                    L.pushInteger(38);
+                    L.replace(39);
+                    _pc = 39; break;
+                }
+                case 39: {
+                    // LOADI
+                    // LOADI pc=40 a=39 b=0 c=0 k=0 bx=1073741862 sbx=39
+                    // LOADI: pc=40 a=39 sbx=39
+                    L.pushInteger(39);
+                    L.replace(40);
+                    _pc = 40; break;
+                }
+                case 40: {
+                    // LOADI
+                    // LOADI pc=41 a=40 b=0 c=0 k=0 bx=1073741863 sbx=40
+                    // LOADI: pc=41 a=40 sbx=40
+                    L.pushInteger(40);
+                    L.replace(41);
+                    _pc = 41; break;
+                }
+                case 41: {
+                    // LOADI
+                    // LOADI pc=42 a=41 b=0 c=0 k=0 bx=1073741864 sbx=41
+                    // LOADI: pc=42 a=41 sbx=41
+                    L.pushInteger(41);
+                    L.replace(42);
+                    _pc = 42; break;
+                }
+                case 42: {
+                    // LOADI
+                    // LOADI pc=43 a=42 b=0 c=0 k=0 bx=1073741865 sbx=42
+                    // LOADI: pc=43 a=42 sbx=42
+                    L.pushInteger(42);
+                    L.replace(43);
+                    _pc = 43; break;
+                }
+                case 43: {
+                    // LOADI
+                    // LOADI pc=44 a=43 b=0 c=0 k=0 bx=1073741866 sbx=43
+                    // LOADI: pc=44 a=43 sbx=43
+                    L.pushInteger(43);
+                    L.replace(44);
+                    _pc = 44; break;
+                }
+                case 44: {
+                    // LOADI
+                    // LOADI pc=45 a=44 b=0 c=0 k=0 bx=1073741867 sbx=44
+                    // LOADI: pc=45 a=44 sbx=44
+                    L.pushInteger(44);
+                    L.replace(45);
+                    _pc = 45; break;
+                }
+                case 45: {
+                    // LOADI
+                    // LOADI pc=46 a=45 b=0 c=0 k=0 bx=1073741868 sbx=45
+                    // LOADI: pc=46 a=45 sbx=45
+                    L.pushInteger(45);
+                    L.replace(46);
+                    _pc = 46; break;
+                }
+                case 46: {
+                    // LOADI
+                    // LOADI pc=47 a=46 b=0 c=0 k=0 bx=1073741869 sbx=46
+                    // LOADI: pc=47 a=46 sbx=46
+                    L.pushInteger(46);
+                    L.replace(47);
+                    _pc = 47; break;
+                }
+                case 47: {
+                    // LOADI
+                    // LOADI pc=48 a=47 b=0 c=0 k=0 bx=1073741870 sbx=47
+                    // LOADI: pc=48 a=47 sbx=47
+                    L.pushInteger(47);
+                    L.replace(48);
+                    _pc = 48; break;
+                }
+                case 48: {
+                    // LOADI
+                    // LOADI pc=49 a=48 b=0 c=0 k=0 bx=1073741871 sbx=48
+                    // LOADI: pc=49 a=48 sbx=48
+                    L.pushInteger(48);
+                    L.replace(49);
+                    _pc = 49; break;
+                }
+                case 49: {
+                    // LOADI
+                    // LOADI pc=50 a=49 b=0 c=0 k=0 bx=1073741872 sbx=49
+                    // LOADI: pc=50 a=49 sbx=49
+                    L.pushInteger(49);
+                    L.replace(50);
+                    _pc = 50; break;
+                }
+                case 50: {
+                    // LOADI
+                    // LOADI pc=51 a=50 b=0 c=0 k=0 bx=1073741873 sbx=50
+                    // LOADI: pc=51 a=50 sbx=50
+                    L.pushInteger(50);
+                    L.replace(51);
+                    _pc = 51; break;
+                }
+                case 51: {
+                    // SETLIST
+                    // SETLIST pc=52 a=0 b=0 c=0 k=0 vb=50
+                    {
+                        int n = 50;
+                        if (n == 0) n = L.getTop() - 1;
+                        // Lua 5.5: R[A][vC+i] := R[A+i], 从后往前设置
+                        int startIdx = 1 + n - 1;
+                        for (int j = n; j >= 1; j--) {
+                            L.pushValue(1 + j);
+                            L.setI(1, startIdx);
+                            startIdx--;
+                        }
+                        L.setTop(1);
+                    }
+                    _pc = 52; break;
+                }
+                case 52: {
+                    // LOADI
+                    // LOADI pc=53 a=1 b=0 c=0 k=0 bx=1073741874 sbx=51
+                    // LOADI: pc=53 a=1 sbx=51
+                    L.pushInteger(51);
+                    L.replace(2);
+                    _pc = 53; break;
+                }
+                case 53: {
+                    // LOADI
+                    // LOADI pc=54 a=2 b=0 c=0 k=0 bx=1073741875 sbx=52
+                    // LOADI: pc=54 a=2 sbx=52
+                    L.pushInteger(52);
+                    L.replace(3);
+                    _pc = 54; break;
+                }
+                case 54: {
+                    // LOADI
+                    // LOADI pc=55 a=3 b=0 c=0 k=0 bx=1073741876 sbx=53
+                    // LOADI: pc=55 a=3 sbx=53
+                    L.pushInteger(53);
+                    L.replace(4);
+                    _pc = 55; break;
+                }
+                case 55: {
+                    // LOADI
+                    // LOADI pc=56 a=4 b=0 c=0 k=0 bx=1073741877 sbx=54
+                    // LOADI: pc=56 a=4 sbx=54
+                    L.pushInteger(54);
+                    L.replace(5);
+                    _pc = 56; break;
+                }
+                case 56: {
+                    // LOADI
+                    // LOADI pc=57 a=5 b=0 c=0 k=0 bx=1073741878 sbx=55
+                    // LOADI: pc=57 a=5 sbx=55
+                    L.pushInteger(55);
+                    L.replace(6);
+                    _pc = 57; break;
+                }
+                case 57: {
+                    // LOADI
+                    // LOADI pc=58 a=6 b=0 c=0 k=0 bx=1073741879 sbx=56
+                    // LOADI: pc=58 a=6 sbx=56
+                    L.pushInteger(56);
+                    L.replace(7);
+                    _pc = 58; break;
+                }
+                case 58: {
+                    // LOADI
+                    // LOADI pc=59 a=7 b=0 c=0 k=0 bx=1073741880 sbx=57
+                    // LOADI: pc=59 a=7 sbx=57
+                    L.pushInteger(57);
+                    L.replace(8);
+                    _pc = 59; break;
+                }
+                case 59: {
+                    // LOADI
+                    // LOADI pc=60 a=8 b=0 c=0 k=0 bx=1073741881 sbx=58
+                    // LOADI: pc=60 a=8 sbx=58
+                    L.pushInteger(58);
+                    L.replace(9);
+                    _pc = 60; break;
+                }
+                case 60: {
+                    // LOADI
+                    // LOADI pc=61 a=9 b=0 c=0 k=0 bx=1073741882 sbx=59
+                    // LOADI: pc=61 a=9 sbx=59
+                    L.pushInteger(59);
+                    L.replace(10);
+                    _pc = 61; break;
+                }
+                case 61: {
+                    // LOADI
+                    // LOADI pc=62 a=10 b=0 c=0 k=0 bx=1073741883 sbx=60
+                    // LOADI: pc=62 a=10 sbx=60
+                    L.pushInteger(60);
+                    L.replace(11);
+                    _pc = 62; break;
+                }
+                case 62: {
+                    // LOADI
+                    // LOADI pc=63 a=11 b=0 c=0 k=0 bx=1073741884 sbx=61
+                    // LOADI: pc=63 a=11 sbx=61
+                    L.pushInteger(61);
+                    L.replace(12);
+                    _pc = 63; break;
+                }
+                case 63: {
+                    // LOADI
+                    // LOADI pc=64 a=12 b=0 c=0 k=0 bx=1073741885 sbx=62
+                    // LOADI: pc=64 a=12 sbx=62
+                    L.pushInteger(62);
+                    L.replace(13);
+                    _pc = 64; break;
+                }
+                case 64: {
+                    // LOADI
+                    // LOADI pc=65 a=13 b=0 c=0 k=0 bx=1073741886 sbx=63
+                    // LOADI: pc=65 a=13 sbx=63
+                    L.pushInteger(63);
+                    L.replace(14);
+                    _pc = 65; break;
+                }
+                case 65: {
+                    // LOADI
+                    // LOADI pc=66 a=14 b=0 c=0 k=0 bx=1073741887 sbx=64
+                    // LOADI: pc=66 a=14 sbx=64
+                    L.pushInteger(64);
+                    L.replace(15);
+                    _pc = 66; break;
+                }
+                case 66: {
+                    // LOADI
+                    // LOADI pc=67 a=15 b=0 c=0 k=0 bx=1073741888 sbx=65
+                    // LOADI: pc=67 a=15 sbx=65
+                    L.pushInteger(65);
+                    L.replace(16);
+                    _pc = 67; break;
+                }
+                case 67: {
+                    // LOADI
+                    // LOADI pc=68 a=16 b=0 c=0 k=0 bx=1073741889 sbx=66
+                    // LOADI: pc=68 a=16 sbx=66
+                    L.pushInteger(66);
+                    L.replace(17);
+                    _pc = 68; break;
+                }
+                case 68: {
+                    // LOADI
+                    // LOADI pc=69 a=17 b=0 c=0 k=0 bx=1073741890 sbx=67
+                    // LOADI: pc=69 a=17 sbx=67
+                    L.pushInteger(67);
+                    L.replace(18);
+                    _pc = 69; break;
+                }
+                case 69: {
+                    // LOADI
+                    // LOADI pc=70 a=18 b=0 c=0 k=0 bx=1073741891 sbx=68
+                    // LOADI: pc=70 a=18 sbx=68
+                    L.pushInteger(68);
+                    L.replace(19);
+                    _pc = 70; break;
+                }
+                case 70: {
+                    // LOADI
+                    // LOADI pc=71 a=19 b=0 c=0 k=0 bx=1073741892 sbx=69
+                    // LOADI: pc=71 a=19 sbx=69
+                    L.pushInteger(69);
+                    L.replace(20);
+                    _pc = 71; break;
+                }
+                case 71: {
+                    // LOADI
+                    // LOADI pc=72 a=20 b=0 c=0 k=0 bx=1073741893 sbx=70
+                    // LOADI: pc=72 a=20 sbx=70
+                    L.pushInteger(70);
+                    L.replace(21);
+                    _pc = 72; break;
+                }
+                case 72: {
+                    // LOADI
+                    // LOADI pc=73 a=21 b=0 c=0 k=0 bx=1073741894 sbx=71
+                    // LOADI: pc=73 a=21 sbx=71
+                    L.pushInteger(71);
+                    L.replace(22);
+                    _pc = 73; break;
+                }
+                case 73: {
+                    // LOADI
+                    // LOADI pc=74 a=22 b=0 c=0 k=0 bx=1073741895 sbx=72
+                    // LOADI: pc=74 a=22 sbx=72
+                    L.pushInteger(72);
+                    L.replace(23);
+                    _pc = 74; break;
+                }
+                case 74: {
+                    // LOADI
+                    // LOADI pc=75 a=23 b=0 c=0 k=0 bx=1073741896 sbx=73
+                    // LOADI: pc=75 a=23 sbx=73
+                    L.pushInteger(73);
+                    L.replace(24);
+                    _pc = 75; break;
+                }
+                case 75: {
+                    // LOADI
+                    // LOADI pc=76 a=24 b=0 c=0 k=0 bx=1073741897 sbx=74
+                    // LOADI: pc=76 a=24 sbx=74
+                    L.pushInteger(74);
+                    L.replace(25);
+                    _pc = 76; break;
+                }
+                case 76: {
+                    // LOADI
+                    // LOADI pc=77 a=25 b=0 c=0 k=0 bx=1073741898 sbx=75
+                    // LOADI: pc=77 a=25 sbx=75
+                    L.pushInteger(75);
+                    L.replace(26);
+                    _pc = 77; break;
+                }
+                case 77: {
+                    // LOADI
+                    // LOADI pc=78 a=26 b=0 c=0 k=0 bx=1073741899 sbx=76
+                    // LOADI: pc=78 a=26 sbx=76
+                    L.pushInteger(76);
+                    L.replace(27);
+                    _pc = 78; break;
+                }
+                case 78: {
+                    // LOADI
+                    // LOADI pc=79 a=27 b=0 c=0 k=0 bx=1073741900 sbx=77
+                    // LOADI: pc=79 a=27 sbx=77
+                    L.pushInteger(77);
+                    L.replace(28);
+                    _pc = 79; break;
+                }
+                case 79: {
+                    // LOADI
+                    // LOADI pc=80 a=28 b=0 c=0 k=0 bx=1073741901 sbx=78
+                    // LOADI: pc=80 a=28 sbx=78
+                    L.pushInteger(78);
+                    L.replace(29);
+                    _pc = 80; break;
+                }
+                case 80: {
+                    // LOADI
+                    // LOADI pc=81 a=29 b=0 c=0 k=0 bx=1073741902 sbx=79
+                    // LOADI: pc=81 a=29 sbx=79
+                    L.pushInteger(79);
+                    L.replace(30);
+                    _pc = 81; break;
+                }
+                case 81: {
+                    // LOADI
+                    // LOADI pc=82 a=30 b=0 c=0 k=0 bx=1073741903 sbx=80
+                    // LOADI: pc=82 a=30 sbx=80
+                    L.pushInteger(80);
+                    L.replace(31);
+                    _pc = 82; break;
+                }
+                case 82: {
+                    // LOADI
+                    // LOADI pc=83 a=31 b=0 c=0 k=0 bx=1073741904 sbx=81
+                    // LOADI: pc=83 a=31 sbx=81
+                    L.pushInteger(81);
+                    L.replace(32);
+                    _pc = 83; break;
+                }
+                case 83: {
+                    // LOADI
+                    // LOADI pc=84 a=32 b=0 c=0 k=0 bx=1073741905 sbx=82
+                    // LOADI: pc=84 a=32 sbx=82
+                    L.pushInteger(82);
+                    L.replace(33);
+                    _pc = 84; break;
+                }
+                case 84: {
+                    // LOADI
+                    // LOADI pc=85 a=33 b=0 c=0 k=0 bx=1073741906 sbx=83
+                    // LOADI: pc=85 a=33 sbx=83
+                    L.pushInteger(83);
+                    L.replace(34);
+                    _pc = 85; break;
+                }
+                case 85: {
+                    // LOADI
+                    // LOADI pc=86 a=34 b=0 c=0 k=0 bx=1073741907 sbx=84
+                    // LOADI: pc=86 a=34 sbx=84
+                    L.pushInteger(84);
+                    L.replace(35);
+                    _pc = 86; break;
+                }
+                case 86: {
+                    // LOADI
+                    // LOADI pc=87 a=35 b=0 c=0 k=0 bx=1073741908 sbx=85
+                    // LOADI: pc=87 a=35 sbx=85
+                    L.pushInteger(85);
+                    L.replace(36);
+                    _pc = 87; break;
+                }
+                case 87: {
+                    // LOADI
+                    // LOADI pc=88 a=36 b=0 c=0 k=0 bx=1073741909 sbx=86
+                    // LOADI: pc=88 a=36 sbx=86
+                    L.pushInteger(86);
+                    L.replace(37);
+                    _pc = 88; break;
+                }
+                case 88: {
+                    // LOADI
+                    // LOADI pc=89 a=37 b=0 c=0 k=0 bx=1073741910 sbx=87
+                    // LOADI: pc=89 a=37 sbx=87
+                    L.pushInteger(87);
+                    L.replace(38);
+                    _pc = 89; break;
+                }
+                case 89: {
+                    // LOADI
+                    // LOADI pc=90 a=38 b=0 c=0 k=0 bx=1073741911 sbx=88
+                    // LOADI: pc=90 a=38 sbx=88
+                    L.pushInteger(88);
+                    L.replace(39);
+                    _pc = 90; break;
+                }
+                case 90: {
+                    // LOADI
+                    // LOADI pc=91 a=39 b=0 c=0 k=0 bx=1073741912 sbx=89
+                    // LOADI: pc=91 a=39 sbx=89
+                    L.pushInteger(89);
+                    L.replace(40);
+                    _pc = 91; break;
+                }
+                case 91: {
+                    // LOADI
+                    // LOADI pc=92 a=40 b=0 c=0 k=0 bx=1073741913 sbx=90
+                    // LOADI: pc=92 a=40 sbx=90
+                    L.pushInteger(90);
+                    L.replace(41);
+                    _pc = 92; break;
+                }
+                case 92: {
+                    // LOADI
+                    // LOADI pc=93 a=41 b=0 c=0 k=0 bx=1073741914 sbx=91
+                    // LOADI: pc=93 a=41 sbx=91
+                    L.pushInteger(91);
+                    L.replace(42);
+                    _pc = 93; break;
+                }
+                case 93: {
+                    // LOADI
+                    // LOADI pc=94 a=42 b=0 c=0 k=0 bx=1073741915 sbx=92
+                    // LOADI: pc=94 a=42 sbx=92
+                    L.pushInteger(92);
+                    L.replace(43);
+                    _pc = 94; break;
+                }
+                case 94: {
+                    // LOADI
+                    // LOADI pc=95 a=43 b=0 c=0 k=0 bx=1073741916 sbx=93
+                    // LOADI: pc=95 a=43 sbx=93
+                    L.pushInteger(93);
+                    L.replace(44);
+                    _pc = 95; break;
+                }
+                case 95: {
+                    // LOADI
+                    // LOADI pc=96 a=44 b=0 c=0 k=0 bx=1073741917 sbx=94
+                    // LOADI: pc=96 a=44 sbx=94
+                    L.pushInteger(94);
+                    L.replace(45);
+                    _pc = 96; break;
+                }
+                case 96: {
+                    // LOADI
+                    // LOADI pc=97 a=45 b=0 c=0 k=0 bx=1073741918 sbx=95
+                    // LOADI: pc=97 a=45 sbx=95
+                    L.pushInteger(95);
+                    L.replace(46);
+                    _pc = 97; break;
+                }
+                case 97: {
+                    // LOADI
+                    // LOADI pc=98 a=46 b=0 c=0 k=0 bx=1073741919 sbx=96
+                    // LOADI: pc=98 a=46 sbx=96
+                    L.pushInteger(96);
+                    L.replace(47);
+                    _pc = 98; break;
+                }
+                case 98: {
+                    // LOADI
+                    // LOADI pc=99 a=47 b=0 c=0 k=0 bx=1073741920 sbx=97
+                    // LOADI: pc=99 a=47 sbx=97
+                    L.pushInteger(97);
+                    L.replace(48);
+                    _pc = 99; break;
+                }
+                case 99: {
+                    // LOADI
+                    // LOADI pc=100 a=48 b=0 c=0 k=0 bx=1073741921 sbx=98
+                    // LOADI: pc=100 a=48 sbx=98
+                    L.pushInteger(98);
+                    L.replace(49);
+                    _pc = 100; break;
+                }
+                case 100: {
+                    // LOADI
+                    // LOADI pc=101 a=49 b=0 c=0 k=0 bx=1073741922 sbx=99
+                    // LOADI: pc=101 a=49 sbx=99
+                    L.pushInteger(99);
+                    L.replace(50);
+                    _pc = 101; break;
+                }
+                case 101: {
+                    // LOADI
+                    // LOADI pc=102 a=50 b=0 c=0 k=0 bx=1073741923 sbx=100
+                    // LOADI: pc=102 a=50 sbx=100
+                    L.pushInteger(100);
+                    L.replace(51);
+                    _pc = 102; break;
+                }
+                case 102: {
+                    // SETLIST
+                    // SETLIST pc=103 a=0 b=0 c=0 k=0 vb=50 vc=200
+                    {
+                        int n = 50;
+                        if (n == 0) n = L.getTop() - 1;
+                        // Lua 5.5: R[A][vC+i] := R[A+i], 从后往前设置
+                        int startIdx = 200 + n - 1;
+                        for (int j = n; j >= 1; j--) {
+                            L.pushValue(1 + j);
+                            L.setI(1, startIdx);
+                            startIdx--;
+                        }
+                        L.setTop(1);
+                    }
+                    _pc = 103; break;
+                }
+                case 103: {
+                    // RETURN1
+                    // RETURN1 pc=104 a=0 b=2 c=0 k=0
+                    L.pushValue(1);
+                    return 1;
+                }
+                case 104: {
+                    // RETURN0
+                    // RETURN0 pc=105 a=0 b=1 c=0 k=0
+                    return 0;
+                }
+                default: return 0;
+            }
+        }
+    }
+
+    public TestCompiled() {
+        this.funcId = 0;
+    }
+
+    public TestCompiled(int id) {
+        this.funcId = id;
+    }
+
+    @Override
+    public int execute(LuaJava L) throws LuaException {
+        return function_0(L);
+    }
+
+    @Override
+    public int getFunctionId() {
+        return funcId;
+    }
+
+    @Override
+    public String getFunctionName() {
+        return "function_0";
+    }
+
+    @Override
+    public int getNumParams() {
+        return 0;
+    }
+
+    @Override
+    public boolean isVararg() {
+        return true;
+    }
+
+    @Override
+    public int getNumUpvalues() {
+        return 0;
+    }
+}
