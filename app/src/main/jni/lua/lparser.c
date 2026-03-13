@@ -1809,9 +1809,18 @@ static void closelistfield (FuncState *fs, ConsControl *cc) {
 
 static void lastlistfield (FuncState *fs, ConsControl *cc) {
   if (cc->tostore == 0) return;
-  if (cc->has_spread) return; /* If there was a spread, do not emit SETLIST for remaining! */
+  if (cc->has_spread && !hasmultret(cc->v.k)) return; /* If there was a spread, do not emit SETLIST for remaining! */
   if (hasmultret(cc->v.k)) {
     luaK_setmultret(fs, &cc->v);
+    
+    if (cc->has_spread) {
+        /* Note: Using multret after spread operator overwrites dynamically added elements because `cc->na` is static. 
+           Proper multret spread will require a new runtime instruction or complex loop block handling L->top, 
+           so for now we preserve standard behavior which uses SETLIST and relies on cc->na. 
+           We simply allow `hasmultret` to proceed and use `luaK_setlist`.
+         */
+    }
+    
     luaK_setlist(fs, cc->t->u.info, cc->na, LUA_MULTRET);
     cc->na--;  /* do not count last expression (unknown number of elements) */
   }
